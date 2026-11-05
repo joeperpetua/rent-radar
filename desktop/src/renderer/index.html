@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="de" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https:; frame-src https://www.openstreetmap.org">
+  <title>RentRadar Austria</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23e5484d'/><path d='M8 16l8-7 8 7v8h-5v-5h-6v5H8z' fill='white'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="booting">
+  <header class="topbar">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">RentRadar <em>Austria</em></span>
+    </a>
+    <a class="btn topbar-back" href="#/" id="back" data-i18n="backShort">← Zurück</a>
+    <div class="status" id="status"></div>
+    <div class="lang-switch" role="group" data-i18n-aria="language" id="lang-switch">
+      <button type="button" data-lang="de">DE</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+    <button class="btn btn-primary" id="refresh" type="button" data-i18n-title="scanActive">
+      <span class="spinner" aria-hidden="true"></span>
+      <span class="refresh-icon" aria-hidden="true">↻</span>
+      <span class="label" data-i18n="refresh">Scannen</span>
+    </button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <section class="searches">
+        <div class="searches-head">
+          <h2 data-i18n="savedSearches">Gespeicherte Suchen</h2>
+          <button type="button" class="link" id="new-search" data-i18n="newSearch">+ Neue Suche</button>
+        </div>
+        <ul class="search-list" id="search-list"></ul>
+        <div class="searches-foot">
+          <button type="button" class="link" id="scan-all" data-i18n="scanAll">Alle scannen</button>
+          <label class="auto-refresh">
+            <span data-i18n="autoRefresh">Automatisch</span>
+            <select id="auto-refresh" data-i18n-aria="autoRefresh"></select>
+          </label>
+        </div>
+      </section>
+
+      <form id="prefs" autocomplete="off">
+        <h2 id="prefs-title"></h2>
+
+        <label class="field">
+          <span data-i18n="searchName">Name</span>
+          <input type="text" name="name" maxlength="80" id="search-name">
+        </label>
+
+        <fieldset class="field">
+          <legend>
+            <span data-i18n="region">Region</span>
+            <span class="legend-actions">
+              <button type="button" class="link" id="states-all" data-i18n="all">Alle</button>
+              <button type="button" class="link" id="states-none" data-i18n="none">Keine</button>
+            </span>
+          </legend>
+          <div class="district-grid" id="states"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="type">Objektart</span></legend>
+          <div class="segmented" id="types"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>
+            <span data-i18n="categories">Kategorie</span>
+            <button type="button" class="link" id="categories-all" data-i18n="all">Alle</button>
+          </legend>
+          <div class="source-toggles" id="categories"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="rent">Miete</span></legend>
+          <div class="range">
+            <div class="input-suffix"><input type="number" name="minPrice" min="0" step="50" data-i18n-placeholder="min"><i>€</i></div>
+            <span class="range-sep">–</span>
+            <div class="input-suffix"><input type="number" name="maxPrice" min="0" step="50" data-i18n-placeholder="max"><i>€</i></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="size">Fläche</span></legend>
+          <div class="range">
+            <div class="input-suffix"><input type="number" name="minArea" min="0" step="5" data-i18n-placeholder="min"><i>m²</i></div>
+            <span class="range-sep">–</span>
+            <div class="input-suffix"><input type="number" name="maxArea" min="0" step="5" data-i18n-placeholder="max"><i>m²</i></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="rooms">Zimmer</span></legend>
+          <div class="range">
+            <input type="number" name="minRooms" min="0" max="50" step="1" data-i18n-placeholder="min">
+            <span class="range-sep">–</span>
+            <input type="number" name="maxRooms" min="0" max="50" step="1" data-i18n-placeholder="max">
+          </div>
+        </fieldset>
+
+        <fieldset class="field" id="districts-field">
+          <legend>
+            <span data-i18n="districts">Bezirke</span>
+            <span class="legend-actions">
+              <button type="button" class="link" id="districts-all" data-i18n="all">Alle</button>
+              <button type="button" class="link" id="districts-none" data-i18n="none">Keine</button>
+            </span>
+          </legend>
+          <div class="district-grid" id="districts"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="sources">Quellen</span></legend>
+          <div class="source-toggles" id="sources"></div>
+        </fieldset>
+
+        <button class="btn btn-primary btn-block" type="submit" id="save-search"></button>
+        <button class="btn btn-ghost btn-block btn-danger" type="button" id="delete-search" data-i18n="deleteSearch">Suche löschen</button>
+        <p class="hint" id="prefs-hint"></p>
+      </form>
+    </aside>
+
+    <main class="main">
+      <section id="list-view">
+        <div class="toolbar">
+          <button class="btn btn-ghost filters-toggle" id="filters-toggle" type="button" data-i18n="filters">Filter</button>
+          <input type="search" id="q" data-i18n-placeholder="searchPlaceholder" data-i18n-aria="searchLabel">
+          <select id="sort" data-i18n-aria="sortLabel">
+            <option value="new" data-i18n="sort.new"></option>
+            <option value="price-asc" data-i18n="sort.price-asc"></option>
+            <option value="price-desc" data-i18n="sort.price-desc"></option>
+            <option value="sqm-asc" data-i18n="sort.sqm-asc"></option>
+            <option value="area-desc" data-i18n="sort.area-desc"></option>
+            <option value="drop" data-i18n="sort.drop"></option>
+          </select>
+          <div class="chips" role="group" data-i18n-aria="viewLabel">
+            <button type="button" class="chip" data-toggle="onlyNew" data-i18n="chip.onlyNew"></button>
+            <button type="button" class="chip" data-toggle="onlyDropped" data-i18n="chip.onlyDropped"></button>
+            <button type="button" class="chip" data-toggle="onlyMulti" data-i18n="chip.onlyMulti"></button>
+            <button type="button" class="chip" data-toggle="onlyFav" data-i18n="chip.onlyFav"></button>
+          </div>
+        </div>
+        <p class="result-count" id="result-count"></p>
+        <div class="grid" id="grid"></div>
+        <div class="empty" id="empty" hidden></div>
+      </section>
+
+      <section id="detail-view" hidden></section>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" hidden>
+    <img alt="" referrerpolicy="no-referrer">
+    <button class="lb-close" type="button" data-lb="close" data-i18n-aria="close">×</button>
+    <button class="lb-nav prev" type="button" data-lb="prev" data-i18n-aria="prevImage">‹</button>
+    <button class="lb-nav next" type="button" data-lb="next" data-i18n-aria="nextImage">›</button>
+    <span class="lb-count"></span>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

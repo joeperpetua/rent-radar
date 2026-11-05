@@ -1,0 +1,9 @@
+.git
+.claude
+node_modules
+data
+test
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore

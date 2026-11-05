@@ -1,0 +1,23 @@
+services:
+  immo-tool:
+    build: .
+    image: immo-tool
+    container_name: immo-tool
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
+      IP_HEADER: ${IP_HEADER:-}
+      REFRESH_MINUTES: ${REFRESH_MINUTES:-30}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GUEST_SEARCH_DAYS: ${GUEST_SEARCH_DAYS:-7}
+    volumes:
+      - immo-data:/data
+
+volumes:
+  immo-data:

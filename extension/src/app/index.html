@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="de" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https:; frame-src https://www.openstreetmap.org">
+  <title>RentRadar Austria</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="boot.js"></script>
+</head>
+<body class="booting">
+  <header class="topbar">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true"><i data-icon="house"></i></span>
+      <span class="brand-name">RentRadar <em>Austria</em></span>
+    </a>
+    <a class="btn topbar-back" href="#/" id="back"><i data-icon="arrow-left"></i><span data-i18n="backShort">Zurück</span></a>
+    <div class="status" id="status"></div>
+    <a class="btn favorites-link" href="#/favorites" id="favorites-link" aria-current="false" data-i18n-title="favorites"><i data-icon="star"></i><span class="label" data-i18n="favorites">Favoriten</span></a>
+    <div class="search-switch">
+      <button class="btn search-trigger" id="search-trigger" type="button" popovertarget="search-menu" data-i18n-title="switchSearch">
+        <i data-icon="bookmark" class="search-trigger-icon"></i>
+        <span class="search-trigger-name" id="search-trigger-name"></span>
+        <i data-icon="chevron-down" class="search-trigger-chevron"></i>
+      </button>
+      <div class="search-menu" id="search-menu" popover>
+        <div class="searches-head">
+          <h2 data-i18n="savedSearches">Gespeicherte Suchen</h2>
+          <button type="button" class="link" id="new-search"><i data-icon="plus"></i><span data-i18n="newSearch">Neue Suche</span></button>
+        </div>
+        <ul class="search-list" id="search-list"></ul>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="refresh" type="button" data-i18n-title="scanActive">
+      <i data-icon="refresh-cw" class="refresh-icon"></i>
+      <span class="label" data-i18n="refresh">Aktualisieren</span>
+    </button>
+    <button class="btn settings-trigger" id="settings-trigger" type="button" popovertarget="settings-menu" data-i18n-title="settings" data-i18n-aria="settings"><i data-icon="settings"></i></button>
+    <div class="settings-menu" id="settings-menu" popover>
+      <h2 data-i18n="settings">Einstellungen</h2>
+      <fieldset class="settings-group style-picker">
+        <legend data-i18n="design">Design</legend>
+        <label class="style-option">
+          <input type="radio" name="style" value="styled">
+          <span class="style-swatch styled" aria-hidden="true"><i></i><i></i></span>
+          <span class="style-text"><strong data-i18n="style.styled"></strong><small data-i18n="styleHint.styled"></small></span>
+        </label>
+        <label class="style-option">
+          <input type="radio" name="style" value="modern">
+          <span class="style-swatch modern" aria-hidden="true"><i></i><i></i></span>
+          <span class="style-text"><strong data-i18n="style.modern"></strong><small data-i18n="styleHint.modern"></small></span>
+        </label>
+        <label class="style-option">
+          <input type="radio" name="style" value="compact">
+          <span class="style-swatch compact" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="style-text"><strong data-i18n="style.compact"></strong><small data-i18n="styleHint.compact"></small></span>
+        </label>
+      </fieldset>
+      <fieldset class="settings-group">
+        <legend data-i18n="theme">Darstellung</legend>
+        <div class="seg-switch" role="group" data-i18n-aria="theme" id="theme-switch">
+          <button type="button" data-theme-option="system"><i data-icon="monitor"></i><span data-i18n="theme.system">System</span></button>
+          <button type="button" data-theme-option="light"><i data-icon="sun"></i><span data-i18n="theme.light">Hell</span></button>
+          <button type="button" data-theme-option="dark"><i data-icon="moon"></i><span data-i18n="theme.dark">Dunkel</span></button>
+        </div>
+      </fieldset>
+      <fieldset class="settings-group">
+        <legend data-i18n="language">Sprache</legend>
+        <div class="seg-switch" role="group" data-i18n-aria="language" id="lang-switch">
+          <button type="button" data-lang="de">Deutsch</button>
+          <button type="button" data-lang="en">English</button>
+        </div>
+      </fieldset>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <header class="drawer-head">
+        <span class="drawer-title" id="drawer-title"></span>
+        <button class="drawer-close" id="drawer-close" type="button" data-i18n-aria="close"><i data-icon="x"></i></button>
+      </header>
+      <form id="prefs" autocomplete="off">
+        <h2 id="prefs-title"></h2>
+
+        <label class="field">
+          <span data-i18n="searchName">Name</span>
+          <input type="text" name="name" maxlength="80" id="search-name">
+        </label>
+
+        <fieldset class="field">
+          <legend>
+            <span class="legend-label"><span data-i18n="region">Region</span><span class="pick-tag" data-pick="states" data-i18n="noneSelected" hidden></span></span>
+            <span class="legend-actions">
+              <button type="button" class="link" id="states-all" data-i18n="all">Alle</button>
+              <button type="button" class="link" id="states-none" data-i18n="none">Keine</button>
+            </span>
+          </legend>
+          <div class="district-grid" id="states"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span class="legend-label"><span data-i18n="type">Objektart</span><span class="pick-tag" data-pick="types" data-i18n="noneSelected" hidden></span></span></legend>
+          <div class="segmented" id="types"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="rent">Miete</span></legend>
+          <div class="range">
+            <div class="input-suffix"><input type="number" name="minPrice" min="0" step="50" data-i18n-placeholder="min"><i>€</i></div>
+            <span class="range-sep">–</span>
+            <div class="input-suffix"><input type="number" name="maxPrice" min="0" step="50" data-i18n-placeholder="max"><i>€</i></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="size">Fläche</span></legend>
+          <div class="range">
+            <div class="input-suffix"><input type="number" name="minArea" min="0" step="5" data-i18n-placeholder="min"><i>m²</i></div>
+            <span class="range-sep">–</span>
+            <div class="input-suffix"><input type="number" name="maxArea" min="0" step="5" data-i18n-placeholder="max"><i>m²</i></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend><span data-i18n="rooms">Zimmer</span></legend>
+          <div class="range">
+            <input type="number" name="minRooms" min="0" max="50" step="1" data-i18n-placeholder="min">
+            <span class="range-sep">–</span>
+            <input type="number" name="maxRooms" min="0" max="50" step="1" data-i18n-placeholder="max">
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>
+            <span class="legend-label"><span data-i18n="categories">Kategorie</span><span class="pick-tag" data-pick="categories" data-i18n="noneSelected" hidden></span></span>
+            <span class="legend-actions">
+              <button type="button" class="link" id="categories-all" data-i18n="all">Alle</button>
+              <button type="button" class="link" id="categories-none" data-i18n="none">Keine</button>
+            </span>
+          </legend>
+          <div class="source-toggles" id="categories"></div>
+        </fieldset>
+
+        <fieldset class="field" id="districts-field">
+          <legend>
+            <span class="legend-label"><span data-i18n="districts">Bezirke</span><span class="pick-tag" data-pick="districts" data-i18n="noneSelected" hidden></span></span>
+            <span class="legend-actions">
+              <button type="button" class="link" id="districts-all" data-i18n="all">Alle</button>
+              <button type="button" class="link" id="districts-none" data-i18n="none">Keine</button>
+            </span>
+          </legend>
+          <div class="district-grid" id="districts"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>
+            <span class="legend-label"><span data-i18n="sources">Quellen</span><span class="pick-tag" data-pick="sources" data-i18n="noneSelected" hidden></span></span>
+            <span class="legend-actions">
+              <button type="button" class="link" id="sources-all" data-i18n="all">Alle</button>
+              <button type="button" class="link" id="sources-none" data-i18n="none">Keine</button>
+            </span>
+          </legend>
+          <div class="source-toggles" id="sources"></div>
+        </fieldset>
+
+        <button class="btn btn-primary btn-block" type="submit" id="save-search"></button>
+        <p class="hint" id="prefs-hint"></p>
+      </form>
+    </aside>
+
+    <main class="main">
+      <section id="list-view">
+        <div class="toolbar">
+          <button class="btn btn-ghost filters-toggle" id="filters-toggle" type="button"><i data-icon="sliders-horizontal"></i><span data-i18n="filters">Filter</span></button>
+          <span class="input-icon">
+            <i data-icon="search"></i>
+            <input type="search" id="q" data-i18n-placeholder="searchPlaceholder" data-i18n-aria="searchLabel">
+          </span>
+          <span class="select select-icon">
+            <i data-icon="arrow-up-down"></i>
+            <select id="sort" data-i18n-aria="sortLabel">
+              <option value="new" data-i18n="sort.new"></option>
+              <option value="price-asc" data-i18n="sort.price-asc"></option>
+              <option value="price-desc" data-i18n="sort.price-desc"></option>
+              <option value="sqm-asc" data-i18n="sort.sqm-asc"></option>
+              <option value="area-desc" data-i18n="sort.area-desc"></option>
+              <option value="drop" data-i18n="sort.drop"></option>
+            </select>
+            <i data-icon="chevron-down" class="select-chevron"></i>
+          </span>
+          <div class="chips" role="group" data-i18n-aria="viewLabel">
+            <button type="button" class="chip" data-toggle="onlyNew"><i data-icon="sparkles"></i><span data-i18n="chip.onlyNew"></span></button>
+            <button type="button" class="chip" data-toggle="onlyDropped"><i data-icon="trending-down"></i><span data-i18n="chip.onlyDropped"></span></button>
+            <button type="button" class="chip" data-toggle="onlyMulti"><i data-icon="layers"></i><span data-i18n="chip.onlyMulti"></span></button>
+          </div>
+        </div>
+        <p class="result-count" id="result-count"></p>
+        <div class="grid" id="grid"></div>
+        <section class="radar" id="radar" aria-live="polite" hidden></section>
+        <div class="empty" id="empty" hidden></div>
+      </section>
+
+      <section id="favorites-view" hidden></section>
+
+      <section id="detail-view" hidden></section>
+    </main>
+  </div>
+
+  <div class="pull-indicator" id="pull" aria-hidden="true"><i data-icon="refresh-cw"></i></div>
+
+  <nav class="bottom-nav" id="bottom-nav" data-i18n-aria="navigation">
+    <button type="button" data-bottom="filters" aria-current="false"><i data-icon="sliders-horizontal"></i><span data-i18n="filters">Filter</span></button>
+    <a href="#/" data-bottom="listings" aria-current="false"><i data-icon="list"></i><span data-i18n="listings">Inserate</span></a>
+    <a href="#/favorites" data-bottom="favorites" aria-current="false"><i data-icon="star"></i><span data-i18n="favorites">Favoriten</span></a>
+  </nav>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <dialog class="modal" id="confirm-delete" aria-labelledby="confirm-delete-title">
+    <div class="modal-body">
+      <span class="modal-icon"><i data-icon="trash-2"></i></span>
+      <h2 id="confirm-delete-title" data-i18n="deleteTitle"></h2>
+      <p id="confirm-delete-text"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-modal="cancel" data-i18n="cancel"></button>
+        <button class="btn btn-danger" type="button" data-modal="confirm"><i data-icon="trash-2"></i><span data-i18n="deleteConfirm"></span></button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" hidden>
+    <img alt="" referrerpolicy="no-referrer">
+    <button class="lb-close" type="button" data-lb="close" data-i18n-aria="close"><i data-icon="x"></i></button>
+    <button class="lb-nav prev" type="button" data-lb="prev" data-i18n-aria="prevImage"><i data-icon="chevron-left"></i></button>
+    <button class="lb-nav next" type="button" data-lb="next" data-i18n-aria="nextImage"><i data-icon="chevron-right"></i></button>
+    <span class="lb-count"></span>
+  </div>
+
+  <script src="bridge.js" type="module"></script>
+  <script src="app.js" type="module"></script>
+</body>
+</html>

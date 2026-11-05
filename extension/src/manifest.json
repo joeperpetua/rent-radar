@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "RentRadar Austria",
+  "version": "3.0.0",
+  "description": "Saved rental searches across willhaben, ImmoScout24 and Rentola, scanned in the browser and stored locally.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "RentRadar Austria",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["unlimitedStorage"],
+  "host_permissions": [
+    "https://www.willhaben.at/*",
+    "https://www.immobilienscout24.at/*",
+    "https://rentola.at/*"
+  ]
+}

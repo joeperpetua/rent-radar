@@ -47,15 +47,13 @@ test('merges the same flat across portals', () => {
   assert.deepEqual(groupsOf(fixtures), [['immoscout:a', 'willhaben:a']]);
 });
 
-test('merges Rentola net-rent copies with inflated area into the gross listing', () => {
+test('merges cross-portal copies of the same listing', () => {
   const title = 'Sonniger Bezug an der Hütteldorferstrasse unbefristet';
   const fixtures = [
     listing({ id: 's', title, price: 968.34, area: 61, postcode: '1140' }),
-    listing({ id: 's1', source: 'rentola', title, price: 968, area: 61, postcode: '1140', address: 'Matzingerstraße 8, 1140 Wien' }),
-    listing({ id: 's2', source: 'rentola', title, price: 620, area: 61, postcode: '1140', address: '1140 Wien' }),
-    listing({ id: 's3', source: 'rentola', title, price: 620, area: 85.54, postcode: '1140', address: 'Matzingerstraße 8, 1140 Wien' }),
+    listing({ id: 's1', source: 'justimmo', title, price: 968, area: 61, postcode: '1140', address: 'Matzingerstraße 8, 1140 Wien' }),
   ];
-  assert.deepEqual(groupsOf(fixtures), [['rentola:s1', 'rentola:s2', 'rentola:s3', 'willhaben:s']]);
+  assert.deepEqual(groupsOf(fixtures), [['justimmo:s1', 'willhaben:s']]);
 });
 
 test('merges a listing reposted on the same portal', () => {
@@ -113,11 +111,11 @@ test('tolerates a one-room disagreement when everything else matches', () => {
   assert.deepEqual(groupsOf(fixtures), [['rentola:r', 'willhaben:r']]);
 });
 
-test('keeps Rentola units apart when prices differ but are not net vs gross', () => {
+test('keeps units apart when prices differ', () => {
   const title = 'Bright apartment near Vienna Main Station with balcony';
   const fixtures = [
-    listing({ id: 'b1', source: 'rentola', title, price: 1300, area: 430, postcode: '1150' }),
-    listing({ id: 'b2', source: 'rentola', title, price: 1350, area: 560, postcode: '1150' }),
+    listing({ id: 'b1', source: 'justimmo', title, price: 1300, area: 55, postcode: '1150' }),
+    listing({ id: 'b2', source: 'justimmo', title, price: 1350, area: 55, postcode: '1150' }),
   ];
   assert.equal(groupsOf(fixtures).length, 2);
 });
@@ -128,4 +126,34 @@ test('extracts normalized street names', () => {
   assert.equal(streetOf('Yellow! Taschenbücher, Garnisongasse 7, 1090 Wien'), 'garnisongasse');
   assert.equal(streetOf('1170 Wien'), null);
   assert.equal(streetOf('Wien, 10. Bezirk, Favoriten'), null);
+});
+
+test('carries sourceUrl and sourceHost into sources[]', () => {
+  const item = listing({
+    id: 'w1',
+    source: 'wunderflats',
+    sourceUrl: 'https://wunderflats.com/de/moeblierte-wohnung/vienna/123',
+    sourceHost: 'wunderflats.com',
+  });
+  const [group] = dedupe([item]);
+  assert.equal(group.sources[0].sourceUrl, 'https://wunderflats.com/de/moeblierte-wohnung/vienna/123');
+  assert.equal(group.sources[0].sourceHost, 'wunderflats.com');
+});
+
+test('dedupes image resolution variants and duplicate photos within a group', () => {
+  const item = listing({
+    id: 'f1',
+    source: 'fify',
+    images: [
+      'https://fify-dynamo-assets.sos-at-vie-1.exo.io/c859_hd.webp',
+      'https://fify-dynamo-assets.sos-at-vie-1.exo.io/c859_2xl.webp',
+      'https://fify-dynamo-assets.sos-at-vie-1.exo.io/ce8c_hd.webp',
+      'https://fify-dynamo-assets.sos-at-vie-1.exo.io/ce8c_2xl.webp',
+    ],
+  });
+  const [group] = dedupe([item]);
+  assert.deepEqual(group.images, [
+    'https://fify-dynamo-assets.sos-at-vie-1.exo.io/c859_hd.webp',
+    'https://fify-dynamo-assets.sos-at-vie-1.exo.io/ce8c_hd.webp',
+  ]);
 });

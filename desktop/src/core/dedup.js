@@ -1,12 +1,12 @@
 import { haversineMeters } from './geo.js';
 
-const SOURCE_PRIORITY = ['willhaben', 'immoscout', 'rentola'];
+const SOURCE_PRIORITY = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
 const CROSS_SOURCE_THRESHOLD = 5;
 const SAME_SOURCE_THRESHOLD = 6;
 const TITLE_INFO_SATURATION = 15;
 const MAX_PRECISE_DISTANCE_M = 2500;
-const UNRELIABLE_AREA_SOURCES = new Set(['rentola']);
-const NET_RENT_SOURCES = new Set(['rentola']);
+const UNRELIABLE_AREA_SOURCES = new Set();
+const NET_RENT_SOURCES = new Set();
 const NET_TO_GROSS_RATIO = [0.6, 0.88];
 const HARD_CONFLICT = -Infinity;
 
@@ -44,6 +44,78 @@ export function streetOf(address) {
     if (street.length >= 6 && STREET_SUFFIX.test(street)) return street;
   }
   return null;
+}
+
+export function normalizeImageKey(rawUrl) {
+  try {
+    const u = new URL(rawUrl);
+    let pathname = u.pathname;
+    pathname = pathname.replace(/\/(?:large|small|medium|thumb|thumbs|thumbnail|mini|preview|\d+x\d+|fc_h\d+(?:_w\d+)?)\//gi, '/');
+    pathname = pathname.replace(/[-_](?:hd|2xl|xl|lg|md|sm|xs|org|large|medium|small|thumb|thumbnail|preview|\d+x\d+)\.(webp|jpg|jpeg|png|avif)$/i, '.$1');
+    return `${u.hostname}${pathname}`.toLowerCase();
+  } catch {
+    return String(rawUrl).toLowerCase();
+  }
+}
+
+export function imageQualityScore(url) {
+  let score = 0;
+  const lower = url.toLowerCase();
+  if (lower.includes('_hd') || lower.includes('_2xl') || lower.includes('_org') || lower.includes('original') || lower.includes('/large/')) score += 100;
+  if (lower.includes('_xl') || lower.includes('_lg') || lower.includes('1920') || lower.includes('1080')) score += 60;
+  if (lower.includes('_md') || lower.includes('medium') || lower.includes('800')) score += 30;
+  if (lower.includes('_xs') || lower.includes('_sm') || lower.includes('small') || lower.includes('thumb') || lower.includes('mini') || lower.includes('200')) score -= 50;
+
+  const dim = /(\d{3,4})x(\d{3,4})/.exec(lower);
+  if (dim) score += parseInt(dim[1], 10);
+
+  const justimmoDim = /fc_h(\d+)(?:_w(\d+))?/.exec(lower);
+  if (justimmoDim) score += parseInt(justimmoDim[1], 10);
+
+  return score;
+}
+
+export function dedupeImageUrls(urls, baseUrl = '') {
+  if (!Array.isArray(urls) || !urls.length) return [];
+  const byKey = new Map();
+  const order = [];
+
+  for (const raw of urls) {
+    if (!raw || typeof raw !== 'string') continue;
+    let fullUrl = raw;
+    if (baseUrl) {
+      try {
+        fullUrl = new URL(raw, baseUrl).href;
+      } catch {}
+    }
+    const lower = fullUrl.toLowerCase();
+    if (
+      lower.includes('logo') ||
+      lower.includes('icon') ||
+      lower.includes('avatar') ||
+      lower.includes('banner') ||
+      lower.includes('prismic.io') ||
+      lower.includes('badge') ||
+      lower.includes('/person/') ||
+      lower.includes('/user/') ||
+      lower.includes('placeholder')
+    ) {
+      continue;
+    }
+
+    const key = normalizeImageKey(fullUrl);
+    if (!byKey.has(key)) {
+      byKey.set(key, fullUrl);
+      order.push(key);
+    } else {
+      const existing = byKey.get(key);
+      if (imageQualityScore(fullUrl) > imageQualityScore(existing)) {
+        byKey.set(key, fullUrl);
+      }
+    }
+  }
+
+  return order.map((k) => byKey.get(k));
 }
 
 const streetsMatch = (a, b) => a === b || a.endsWith(b) || b.endsWith(a);
@@ -181,7 +253,7 @@ function buildGroup(members) {
   const first = (key) => ordered.find((m) => m[key] != null && m[key] !== '')?.[key] ?? null;
   const prices = members.map((m) => m.price).filter((p) => p != null);
   const dates = (key) => members.map((m) => m[key]).filter(Boolean).sort();
-  const images = ordered.reduce((best, m) => ((m.images?.length ?? 0) > best.length ? m.images : best), []);
+  const images = dedupeImageUrls(ordered.reduce((best, m) => ((m.images?.length ?? 0) > best.length ? m.images : best), []));
   const description = ordered.map((m) => m.description).filter(Boolean).sort((x, y) => y.length - x.length)[0] ?? null;
   const address = ordered.map((m) => m.address).filter(Boolean).sort((x, y) => y.length - x.length)[0] ?? null;
   const price = primary.price ?? prices[0] ?? null;
@@ -209,6 +281,9 @@ function buildGroup(members) {
     firstSeen: dates('firstSeen')[0] ?? null,
     isPrivate: first('isPrivate'),
     agency: first('agency'),
+    agencyPhone: first('agencyPhone'),
+    agencyEmail: first('agencyEmail'),
+    deposit: first('deposit'),
     floor: first('floor'),
     extras: [...new Set(members.flatMap((m) => m.extras ?? []))],
     portals: new Set(members.map((m) => m.source)).size,
@@ -221,6 +296,11 @@ function buildGroup(members) {
       area: m.area,
       rooms: m.rooms,
       firstSeen: m.firstSeen,
+      sourceUrl: m.sourceUrl ?? null,
+      sourceHost: m.sourceHost ?? null,
+      agency: m.agency ?? null,
+      agencyPhone: m.agencyPhone ?? null,
+      agencyEmail: m.agencyEmail ?? null,
     })),
   };
 }

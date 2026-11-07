@@ -79,6 +79,15 @@ test('the chosen style and theme are saved and returned with the config', async 
   assert.equal(after.theme, 'dark');
 });
 
+test('fetchDetail fetches and stores updated description for a listing', async () => {
+  SOURCES.willhaben.fetchDetails = async () => ({ description: 'Full fetched description' });
+  const res = await dispatch('fetchDetail', { id: 'willhaben:x' });
+  assert.equal(res.description, 'Full fetched description');
+  const stored = await db.getListing('willhaben:x');
+  assert.equal(stored.description, 'Full fetched description');
+  assert.ok(stored.detailsAt);
+});
+
 test('deleting a search removes it', async () => {
   const [search] = await dispatch('searches');
   const { searches } = await dispatch('deleteSearch', { id: search.id });

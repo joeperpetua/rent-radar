@@ -1,12 +1,15 @@
 import * as willhaben from './sources/willhaben.js';
 import * as immoscout from './sources/immoscout.js';
-import * as rentola from './sources/rentola.js';
+import * as cooperatives from './sources/cooperatives.js';
+import * as justimmo from './sources/justimmo.js';
+import * as wunderflats from './sources/wunderflats.js';
+import * as fify from './sources/fify.js';
 import { dedupe } from './dedup.js';
 import { CATEGORIES, groupCategories, passesCategories } from './categories.js';
 import { SCRAPE_KEYS, scrapeKey } from './prefs.js';
 import { dataVersion, getChangedPriceHistories, getMeta, getRuns, getStoredListings, queryListings, saveScrape } from './db.js';
 
-export const SOURCES = { willhaben, immoscout, rentola };
+export const SOURCES = { willhaben, immoscout, cooperatives, justimmo, wunderflats, fify };
 
 const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -130,7 +133,7 @@ export function buildView(prefs) {
   const now = Date.now();
   const initialRunAt = getMeta('initial_run_at', {});
   const { groups: cached, byId, histories } = dedupedGroups(prefs);
-  const inDistricts = cached.filter((g) => !prefs.districts.length || g.state !== 'wien' || prefs.districts.includes(g.district));
+  const inDistricts = cached.filter((g) => g.price != null && g.price > 0 && (!prefs.districts.length || g.state !== 'wien' || prefs.districts.includes(g.district)));
   const all = inDistricts.map((g) => {
     const members = g.sources.map((s) => byId.get(s.id));
     return {

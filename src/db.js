@@ -145,6 +145,8 @@ const statements = {
     ORDER BY listing_id, seen_at`),
   countListings: db.prepare('SELECT COUNT(*) AS n FROM listings'),
   listingsBySource: db.prepare('SELECT id, data FROM listings WHERE source = ?'),
+  listingById: db.prepare('SELECT id, data FROM listings WHERE id = ?'),
+  updateListingData: db.prepare('UPDATE listings SET data = ? WHERE id = ?'),
 };
 
 function transaction(fn) {
@@ -280,6 +282,22 @@ export const getPriceHistory = (id) => statements.priceHistory.all(id);
 
 export function getStoredListings(source) {
   return new Map(statements.listingsBySource.all(source).map((row) => [row.id, JSON.parse(row.data)]));
+}
+
+export function getListing(id) {
+  const row = statements.listingById.get(id);
+  return row ? JSON.parse(row.data) : null;
+}
+
+export function updateListingData(id, patch) {
+  return transaction(() => {
+    const row = statements.listingById.get(id);
+    if (!row) return null;
+    const updatedData = { ...JSON.parse(row.data), ...patch };
+    statements.updateListingData.run(JSON.stringify(updatedData), id);
+    bumpVersion();
+    return updatedData;
+  });
 }
 
 export function getChangedPriceHistories() {

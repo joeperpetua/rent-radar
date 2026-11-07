@@ -49,3 +49,15 @@ test('reports a price increase as a positive delta', () => {
   scrape('2026-03-03T00:00:00.000Z', 980);
   assert.equal(group().priceChange.delta, 30);
 });
+
+test('excludes listings without price from view and stats', () => {
+  db.saveScrape({
+    startedAt: '2026-03-04T00:00:00.000Z',
+    results: [
+      { key: 'willhaben', listings: [flat('willhaben', null)], ms: 1 },
+    ],
+    scope: {},
+  });
+  const view = buildView(prefs);
+  assert.equal(view.groups.some((g) => g.sources.some((s) => s.id === 'willhaben:flat')), false);
+});

@@ -2,7 +2,7 @@ import { applyStatic, feature, getLang, locale, setLang, t } from './i18n.js';
 import { detectLanguage, translateText, translationAvailability, translationSupported } from './translate.js';
 import { TRANSIT_MODES, rateLocation, ratingAvailability, ratingSupported, walkMinutes } from './location.js';
 
-const SOURCE_LABELS = { willhaben: 'willhaben', immoscout: 'ImmoScout24', rentola: 'Rentola' };
+const SOURCE_LABELS = { willhaben: 'willhaben', immoscout: 'ImmoScout24', cooperatives: 'Genossenschaften', justimmo: 'JustImmo', wunderflats: 'Wunderflats', fify: 'Fify' };
 const STORAGE_KEY = 'immo-tool:v1';
 const RANGE_FIELDS = ['minPrice', 'maxPrice', 'minArea', 'maxArea', 'minRooms', 'maxRooms'];
 const TOAST_LINGER_MS = 5000;
@@ -113,7 +113,7 @@ function tickAll(id, checked) {
 
 const memberIds = (g) => g.sources.map((s) => s.id);
 const isFav = (g) => memberIds(g).some((id) => state.favorites.has(id));
-const LISTING_ID = /^(willhaben|immoscout|rentola):\S+$/;
+const LISTING_ID = /^([a-z0-9_-]+):\S+$/;
 
 async function toggleFav(g, rerender) {
   const ids = memberIds(g);
@@ -426,10 +426,30 @@ function filteredGroups() {
 function sourceChips(g) {
   const byPortal = new Map();
   for (const s of g.sources) byPortal.set(s.source, [...(byPortal.get(s.source) ?? []), s]);
-  return [...byPortal].map(([source, items]) => `
-    <a class="src ${source}" href="${esc(items[0].url)}" target="_blank" rel="noopener noreferrer" title="${esc(t('openOn', { source: SOURCE_LABELS[source] }))}">
-      ${esc(SOURCE_LABELS[source])}${items.length > 1 ? `<span class="src-count">×${items.length}</span>` : ''}<span class="ext">↗</span>
-    </a>`).join('');
+  return [...byPortal].map(([source, items]) => {
+    const primary = items[0];
+    const isRentolaWithSource = source === 'rentola' && primary.sourceUrl;
+    const url = isRentolaWithSource ? primary.sourceUrl : primary.url;
+    const label = isRentolaWithSource && primary.sourceHost
+      ? t('originalOn', { host: primary.sourceHost })
+      : SOURCE_LABELS[source];
+    const title = isRentolaWithSource && primary.sourceHost
+      ? t('openOriginalOn', { host: primary.sourceHost })
+      : t('openOn', { source: SOURCE_LABELS[source] });
+
+    let html = `
+    <a class="src ${source}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(title)}">
+      ${esc(label)}${items.length > 1 ? `<span class="src-count">×${items.length}</span>` : ''}<span class="ext">↗</span>
+    </a>`;
+
+    if (isRentolaWithSource) {
+      html += `
+    <a class="src rentola-sub" href="${esc(primary.url)}" target="_blank" rel="noopener noreferrer" title="${esc(t('openOn', { source: SOURCE_LABELS.rentola }))}">
+      ${esc(t('viaRentola'))}<span class="ext">↗</span>
+    </a>`;
+    }
+    return html;
+  }).join('');
 }
 
 function cardHtml(g) {
@@ -516,6 +536,9 @@ function renderDetail(id) {
     g.state && ['fact.region', stateName(g.state)],
     g.floor && ['fact.floor', g.floor],
     ['fact.advertiser', advertiser],
+    g.deposit && ['fact.deposit', euro(g.deposit, 2)],
+    g.agencyPhone && ['fact.phone', g.agencyPhone],
+    g.agencyEmail && ['fact.email', g.agencyEmail],
     ['fact.published', fmtDate(g.publishedAt)],
     ['fact.firstSeen', fmtDate(g.firstSeen)],
   ].filter(Boolean);
@@ -551,15 +574,22 @@ function renderDetail(id) {
           <div class="panel">
             <h2>${esc(t('originals', { n: g.sources.length }))}</h2>
             <div class="origin-list">
-              ${g.sources.map((s) => `
-                <a class="origin ${s.source}" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">
-                  <strong>${esc(SOURCE_LABELS[s.source])}</strong>
-                  <span class="o-price">${euro(s.price, 2)}</span>
-                  <span class="o-title">${esc(s.title)}</span>
-                  <span class="o-open">${esc(t('openListing'))}</span>
-                </a>`).join('')}
+              ${g.sources.map((s) => {
+                const url = s.sourceUrl || s.url;
+                const label = SOURCE_LABELS[s.source] || s.sourceHost || s.source;
+                const actionLabel = t('openListing');
+
+                return `
+                  <a class="origin ${s.source}" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+                    <strong>${esc(label)}</strong>
+                    <span class="o-price">${euro(s.price, 2)}</span>
+                    <span class="o-title">${esc(s.title)}</span>
+                    <span class="o-open">${esc(actionLabel)}</span>
+                  </a>
+                `;
+              }).join('')}
             </div>
-            ${priceDiffers ? `<div class="price-note">${esc(t(g.sources.some((s) => s.source === 'rentola' && s.price === g.priceMin) ? 'priceDiffersNet' : 'priceDiffers'))}</div>` : ''}
+            ${priceDiffers ? `<div class="price-note">${esc(t('priceDiffers'))}</div>` : ''}
           </div>
           ${priceHistoryHtml(g)}
           <div class="panel">
@@ -592,6 +622,30 @@ function renderDetail(id) {
   bindGallery(el, g);
   setupTranslation(g);
   setupRating(g);
+  ensureFullDescription(g);
+}
+
+async function ensureFullDescription(g) {
+  if (g.description && !g.description.endsWith('...')) return;
+  const sourceWithDetail = g.sources.find((s) => s.source === 'willhaben');
+  if (!sourceWithDetail) return;
+  try {
+    const res = await api('/api/listings/detail', {
+      method: 'POST',
+      body: JSON.stringify({ id: sourceWithDetail.id }),
+    });
+    if (res?.description && res.description !== g.description) {
+      g.description = res.description;
+      const text = $('#description-text');
+      if (text && state.detailShown === g.id) {
+        text.textContent = res.description;
+        setupTranslation(g);
+        setupRating(g);
+      }
+    }
+  } catch (err) {
+    console.warn('[detail] fetch failed:', err);
+  }
 }
 
 const RATING_SCORES = ['transit', 'everyday', 'green'];

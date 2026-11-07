@@ -166,7 +166,12 @@ async function searchGraphql(prefs, type, region, onPage) {
   const byId = new Map();
   for (let from = 0; from < GRAPHQL_PAGE_SIZE * MAX_PAGES; from += GRAPHQL_PAGE_SIZE) {
     const hits = (await fetchHits({ ...searchParams(prefs, type, region), from: String(from), size: String(GRAPHQL_PAGE_SIZE) })).filter((h) => h.exposeId);
-    for (const hit of hits) byId.set(hit.exposeId, normalize(hit, type, region));
+    for (const hit of hits) {
+      const listing = normalize(hit, type, region);
+      if (listing.price != null && listing.price > 0) {
+        byId.set(hit.exposeId, listing);
+      }
+    }
     onPage(byId.size);
     if (hits.length < GRAPHQL_PAGE_SIZE) break;
     await sleep(800);
@@ -184,7 +189,10 @@ async function searchHtml(prefs, type, region, onPage) {
     totalPages = results.pagination?.totalPages ?? 1;
     const hits = (results.hits ?? []).filter((h) => h.exposeId);
     if (!hits.length) break;
-    listings.push(...hits.map((h) => normalize(h, type, region)));
+    const validHits = hits
+      .map((h) => normalize(h, type, region))
+      .filter((l) => l.price != null && l.price > 0);
+    listings.push(...validHits);
     onPage(listings.length);
     await sleep(800);
   }

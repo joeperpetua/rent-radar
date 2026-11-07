@@ -1,7 +1,7 @@
-import { fillUnspecified } from './prefs.js';
+import { fillUnspecified, sanitizePrefs } from './prefs.js';
 
 const DB_NAME = 'rentradar';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const REMOVED_RETENTION_DAYS = 90;
 
 const LISTINGS = 'listings';
@@ -16,8 +16,14 @@ let db = null;
 
 function upgrade(idb, from, t) {
   if (from < 1) createStores(idb);
-  if (from < 2) {
-    eachCursor(t.objectStore(SEARCHES).openCursor(), (c) => c.update({ ...c.value, prefs: fillUnspecified(c.value.prefs) }));
+  if (from < 3) {
+    eachCursor(t.objectStore(SEARCHES).openCursor(), (c) => {
+      let prefs = c.value?.prefs;
+      if (!prefs) return;
+      if (from < 2) prefs = fillUnspecified(prefs);
+      prefs = sanitizePrefs(prefs);
+      c.update({ ...c.value, prefs });
+    });
   }
 }
 
@@ -238,11 +244,14 @@ const inRange = (value, min, max) => value == null || ((!min || value >= min) &&
 function matches(l, prefs) {
   return prefs.sources.includes(l.source)
     && prefs.types.includes(l.type)
+    && !l.forSale
+    && !l.data?.forSale
+    && l.price != null && l.price > 0
     && inRange(l.price, prefs.minPrice, prefs.maxPrice)
     && inRange(l.area, prefs.minArea, prefs.maxArea)
     && inRange(l.rooms, prefs.minRooms, prefs.maxRooms)
-    && (prefs.states == null || prefs.states.includes(l.state))
-    && (prefs.districts == null || l.state !== 'wien' || prefs.districts.includes(l.district));
+    && (prefs.states == null || !prefs.states.length || prefs.states.includes(l.state))
+    && (prefs.districts == null || !prefs.districts.length || l.state !== 'wien' || prefs.districts.includes(l.district));
 }
 
 async function memberListings(t, searchId, filter = () => true) {
@@ -302,6 +311,21 @@ export const getChangedPriceHistories = (searchId) => read([MEMBERS, LISTINGS], 
 export const getStoredListings = (source) => read(LISTINGS, async (t) => {
   const rows = await req(t.objectStore(LISTINGS).index('source').getAll(source));
   return new Map(rows.map((row) => [row.id, row.data]));
+});
+
+export const getListing = (id) => read(LISTINGS, async (t) => {
+  const row = await req(t.objectStore(LISTINGS).get(id));
+  return row ? { ...row.data, firstSeen: row.firstSeen, lastSeen: row.lastSeen, prices: row.prices } : null;
+});
+
+export const updateListingData = (id, patch) => write([LISTINGS, META], async (t) => {
+  const store = t.objectStore(LISTINGS);
+  const row = await req(store.get(id));
+  if (!row) return null;
+  const updatedData = { ...row.data, ...patch };
+  await req(store.put({ ...row, data: updatedData }));
+  await bumpVersion(t);
+  return updatedData;
 });
 
 export const getFavorites = () => read(FAVORITES, async (t) => {

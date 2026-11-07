@@ -2,7 +2,8 @@ import { CATEGORIES } from './categories.js';
 import { STATES } from './geo.js';
 
 export const PROPERTY_TYPES = ['apartment', 'house'];
-export const SOURCE_IDS = ['willhaben', 'immoscout', 'rentola'];
+export const SOURCE_IDS = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
+export const NEW_SOURCES = ['cooperatives', 'justimmo', 'wunderflats', 'fify'];
 const STATE_IDS = STATES.map((s) => s.id);
 const RANGES = [['minPrice', 'maxPrice'], ['minArea', 'maxArea'], ['minRooms', 'maxRooms']];
 export const SCRAPE_KEYS = ['states', 'types', 'sources', ...RANGES.flat()];
@@ -32,7 +33,7 @@ export function effectivePrefs(prefs) {
   return {
     ...prefs,
     states: allStates ? null : prefs.states,
-    districts: !vienna || prefs.districts.length === DISTRICT_COUNT ? null : prefs.districts,
+    districts: !vienna || !prefs.districts?.length || prefs.districts.length === DISTRICT_COUNT ? null : prefs.districts,
   };
 }
 
@@ -102,6 +103,12 @@ export function sanitizePrefs(input = {}) {
     const max = int(input[maxKey], 0, limit, 0);
     return max && max < min ? { [minKey]: max, [maxKey]: min } : { [minKey]: min, [maxKey]: max };
   };
+  let rawSources = list(input.sources);
+  if (rawSources && rawSources.length > 0) {
+    if (rawSources.includes('rentola') || (rawSources.includes('willhaben') && rawSources.includes('immoscout') && !NEW_SOURCES.some((s) => rawSources.includes(s)))) {
+      rawSources = [...rawSources.filter((s) => s !== 'rentola'), ...NEW_SOURCES];
+    }
+  }
   return {
     states,
     districts: states.includes('wien') ? districts : [],
@@ -110,6 +117,6 @@ export function sanitizePrefs(input = {}) {
     ...pair('minPrice', 'maxPrice', 100000),
     ...pair('minArea', 'maxArea', 10000),
     ...pair('minRooms', 'maxRooms', 50),
-    sources: list(input.sources) ? pick(input.sources, SOURCE_IDS) : DEFAULT_PREFS.sources,
+    sources: rawSources ? pick(rawSources, SOURCE_IDS) : DEFAULT_PREFS.sources,
   };
 }

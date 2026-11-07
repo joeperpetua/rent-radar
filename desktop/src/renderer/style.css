@@ -16,6 +16,10 @@
   --warn-soft: #fbeadf;
   --src-willhaben: #2f6fed;
   --src-immoscout: #0f9d8a;
+  --src-cooperatives: #10b981;
+  --src-justimmo: #f59e0b;
+  --src-wunderflats: #8b5cf6;
+  --src-fify: #f43f5e;
   --src-rentola: #e0662f;
   --shadow: 0 1px 2px rgba(20, 18, 14, .06), 0 4px 16px rgba(20, 18, 14, .05);
   --radius: 14px;
@@ -40,6 +44,10 @@
     --warn-soft: #3a2616;
     --src-willhaben: #6d9bff;
     --src-immoscout: #3fc9b4;
+    --src-cooperatives: #34d399;
+    --src-justimmo: #fbbf24;
+    --src-wunderflats: #a78bfa;
+    --src-fify: #fb7185;
     --src-rentola: #ff8c57;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4);
     color-scheme: dark;
@@ -61,9 +69,13 @@
   --drop: #2bb5a8;
   --warn: #f0a26b;
   --warn-soft: #3a2616;
-  --src-willhaben: #6d9bff;
-  --src-immoscout: #3fc9b4;
-  --src-rentola: #ff8c57;
+    --src-willhaben: #6d9bff;
+    --src-immoscout: #3fc9b4;
+    --src-cooperatives: #34d399;
+    --src-justimmo: #fbbf24;
+    --src-wunderflats: #a78bfa;
+    --src-fify: #fb7185;
+    --src-rentola: #ff8c57;
   --shadow: 0 1px 2px rgba(0, 0, 0, .4);
   color-scheme: dark;
 }
@@ -187,6 +199,10 @@ input[type="text"] {
 .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
 .dot.willhaben { background: var(--src-willhaben); }
 .dot.immoscout { background: var(--src-immoscout); }
+.dot.cooperatives { background: var(--src-cooperatives); }
+.dot.justimmo { background: var(--src-justimmo); }
+.dot.wunderflats { background: var(--src-wunderflats); }
+.dot.fify { background: var(--src-fify); }
 .dot.rentola { background: var(--src-rentola); }
 
 .btn {
@@ -345,6 +361,10 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .toast-body strong { font-size: 13px; }
 .toast-body strong.willhaben { color: var(--src-willhaben); }
 .toast-body strong.immoscout { color: var(--src-immoscout); }
+.toast-body strong.cooperatives { color: var(--src-cooperatives); }
+.toast-body strong.justimmo { color: var(--src-justimmo); }
+.toast-body strong.wunderflats { color: var(--src-wunderflats); }
+.toast-body strong.fify { color: var(--src-fify); }
 .toast-body strong.rentola { color: var(--src-rentola); }
 .toast-text { color: var(--muted); overflow-wrap: anywhere; }
 .toast[data-state="error"] .toast-text { color: var(--warn); }
@@ -547,6 +567,10 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .history-source { font-size: 13px; }
 .history-source.willhaben { color: var(--src-willhaben); }
 .history-source.immoscout { color: var(--src-immoscout); }
+.history-source.cooperatives { color: var(--src-cooperatives); }
+.history-source.justimmo { color: var(--src-justimmo); }
+.history-source.wunderflats { color: var(--src-wunderflats); }
+.history-source.fify { color: var(--src-fify); }
 .history-source.rentola { color: var(--src-rentola); }
 .history ol { list-style: none; margin: 6px 0 0; padding: 0; }
 .history li {
@@ -601,7 +625,12 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .src:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 .src.willhaben { color: var(--src-willhaben); }
 .src.immoscout { color: var(--src-immoscout); }
+.src.cooperatives { color: var(--src-cooperatives); }
+.src.justimmo { color: var(--src-justimmo); }
+.src.wunderflats { color: var(--src-wunderflats); }
+.src.fify { color: var(--src-fify); }
 .src.rentola { color: var(--src-rentola); }
+.src.rentola-sub { color: var(--src-rentola); opacity: .85; }
 .src .ext { font-size: 10px; opacity: .8; }
 .src .src-count { font-size: 11px; opacity: .85; margin-left: -2px; }
 
@@ -758,11 +787,18 @@ body.lightbox-open { overflow: hidden; }
 .origin:hover { background: var(--surface-2); }
 .origin.willhaben { --src-color: var(--src-willhaben); }
 .origin.immoscout { --src-color: var(--src-immoscout); }
+.origin.cooperatives { --src-color: var(--src-cooperatives); }
+.origin.justimmo { --src-color: var(--src-justimmo); }
+.origin.wunderflats { --src-color: var(--src-wunderflats); }
+.origin.fify { --src-color: var(--src-fify); }
 .origin.rentola { --src-color: var(--src-rentola); }
 .origin strong { color: var(--src-color); }
 .origin .o-price { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .origin .o-title { grid-column: 1 / -1; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .origin .o-open { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--src-color); }
+.origin-sub { margin-top: -6px; margin-bottom: 4px; padding-left: 12px; }
+.origin-sub-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); text-decoration: none; transition: color .15s ease; }
+.origin-sub-link:hover { color: var(--src-rentola); text-decoration: underline; }
 
 .rating { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 14px; }
 .rating h3 { margin: 0 0 10px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }

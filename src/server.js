@@ -4,7 +4,7 @@ import { extname, join, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildStatus, buildView, emptyView, isRunning, needsRescrape, runScrape, SOURCES } from './scrape.js';
 import { DEFAULT_PREFS, hasSavedSearch, loadPrefs, PROPERTY_TYPES, rememberGuestSearch, sanitizePrefs, savePrefs, scrapeScope } from './prefs.js';
-import { closeDb, countFavorites, getFavorites, getLocale, getMeta, setLocale, updateFavorites } from './db.js';
+import { closeDb, countFavorites, getFavorites, getListing, getLocale, getMeta, setLocale, updateFavorites, updateListingData } from './db.js';
 import { DISTRICTS, STATES } from './geo.js';
 import { CATEGORIES } from './categories.js';
 import { authHandler, currentUser, loginOptions, migrateAuth } from './auth.js';
@@ -16,7 +16,7 @@ const REFRESH_COOLDOWN_MS = 2 * 60 * 1000;
 const GUEST_COOKIE = 'rr_search';
 const SECURE_COOKIES = (process.env.BETTER_AUTH_URL ?? '').startsWith('https://');
 const LOCALES = ['de', 'en'];
-const LISTING_ID = /^(willhaben|immoscout|rentola):\S{1,200}$/;
+const LISTING_ID = /^([a-z0-9_-]+):\S{1,200}$/;
 const MAX_FAVORITES = 2000;
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MIME = {
@@ -164,6 +164,35 @@ const routes = {
     if (!LOCALES.includes(locale)) throw new HttpError(400, 'invalid locale');
     setLocale(ctx.user.id, locale);
     return { locale };
+  },
+  'POST /api/listings/detail': async (req) => {
+    const { id } = await readBody(req);
+    if (!id || typeof id !== 'string' || !LISTING_ID.test(id)) throw new HttpError(400, 'invalid listing id');
+    const listing = getListing(id);
+    if (!listing) throw new HttpError(404, 'listing not found');
+    const source = SOURCES[listing.source];
+    if (!source?.fetchDetails) return { description: listing.description };
+    const details = await source.fetchDetails(listing.url);
+    if (details) {
+      const patch = { detailsAt: new Date().toISOString() };
+      if (details.description) patch.description = details.description;
+      if (details.sourceUrl) {
+        patch.sourceUrl = details.sourceUrl;
+        patch.sourceHost = details.sourceHost;
+      }
+      if (details.price != null) patch.price = details.price;
+      if (details.area != null) patch.area = details.area;
+      if (details.rooms != null) patch.rooms = details.rooms;
+      if (details.deposit != null) patch.deposit = details.deposit;
+      if (details.agency) patch.agency = details.agency;
+      if (details.agencyPhone) patch.agencyPhone = details.agencyPhone;
+      if (details.agencyEmail) patch.agencyEmail = details.agencyEmail;
+      if (details.images?.length) patch.images = details.images;
+      if (details.directVerified) patch.directVerified = true;
+      updateListingData(id, patch);
+      return { description: details.description ?? listing.description };
+    }
+    return { description: listing.description };
   },
   'POST /api/favorites': async (req, ctx) => {
     requireUser(ctx.user);

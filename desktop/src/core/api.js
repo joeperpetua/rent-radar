@@ -1,10 +1,10 @@
 import { buildView, emptyView, enqueueScan, cancelQueued, isBusy, scanStatus, SOURCES } from './scan.js';
 import { DEFAULT_PREFS, needsRescan, PROPERTY_TYPES, sanitizeName, sanitizePrefs } from './prefs.js';
-import { allSettings, createSearch, deleteSearch, getFavorites, getSearch, listSearches, setSetting, updateFavorites, updateSearch } from './db.js';
+import { allSettings, createSearch, deleteSearch, getFavorites, getListing, getSearch, listSearches, setSetting, updateFavorites, updateListingData, updateSearch } from './db.js';
 import { DISTRICTS, STATES } from './geo.js';
 import { CATEGORIES } from './categories.js';
 
-const LISTING_ID = /^(willhaben|immoscout|rentola):\S{1,200}$/;
+const LISTING_ID = /^([a-z0-9_-]+):\S{1,200}$/;
 const LOCALES = ['de', 'en'];
 export const REFRESH_CHOICES = [0, 30, 60, 180, 360, 720];
 
@@ -87,6 +87,35 @@ export const handlers = {
     if (!Object.hasOwn(SETTINGS, key) || !SETTINGS[key](value)) throw new ApiError(`invalid setting ${key}`);
     setSetting(key, value);
     return { [key]: value };
+  },
+
+  fetchDetail: async ({ id }) => {
+    if (!id || typeof id !== 'string' || !LISTING_ID.test(id)) throw new ApiError('invalid listing id');
+    const listing = getListing(id);
+    if (!listing) throw new ApiError('listing not found');
+    const source = SOURCES[listing.source];
+    if (!source?.fetchDetails) return { description: listing.description };
+    const details = await source.fetchDetails(listing.url);
+    if (details) {
+      const patch = { detailsAt: new Date().toISOString() };
+      if (details.description) patch.description = details.description;
+      if (details.sourceUrl) {
+        patch.sourceUrl = details.sourceUrl;
+        patch.sourceHost = details.sourceHost;
+      }
+      if (details.price != null) patch.price = details.price;
+      if (details.area != null) patch.area = details.area;
+      if (details.rooms != null) patch.rooms = details.rooms;
+      if (details.deposit != null) patch.deposit = details.deposit;
+      if (details.agency) patch.agency = details.agency;
+      if (details.agencyPhone) patch.agencyPhone = details.agencyPhone;
+      if (details.agencyEmail) patch.agencyEmail = details.agencyEmail;
+      if (details.images?.length) patch.images = details.images;
+      if (details.directVerified) patch.directVerified = true;
+      updateListingData(id, patch);
+      return { description: details.description ?? listing.description };
+    }
+    return { description: listing.description };
   },
 };
 

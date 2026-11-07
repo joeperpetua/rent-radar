@@ -33,7 +33,7 @@ test('scraping covers the union of every saved search', () => {
   assert.deepEqual(scrapeScope(), {
     states: ['wien', 'steiermark'],
     types: ['apartment', 'house'],
-    sources: ['willhaben', 'immoscout', 'rentola'],
+    sources: ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'],
     minPrice: 0, maxPrice: 1000,
     minArea: 0, maxArea: 0,
     minRooms: 0, maxRooms: 0,
@@ -55,4 +55,18 @@ test('ticking every district or state means no filter', () => {
   assert.deepEqual(all.districts, []);
   assert.deepEqual(sanitizePrefs({ states: ['tirol'], districts: [10] }).districts, []);
   assert.deepEqual(sanitizePrefs({ states: [], districts: [10] }).districts, [10]);
+});
+
+test('migrates rentola or legacy all-portals search to include new sources', () => {
+  const fromRentola = sanitizePrefs({ sources: ['rentola'] });
+  assert.deepEqual(fromRentola.sources, ['cooperatives', 'justimmo', 'wunderflats', 'fify']);
+
+  const fromOldAll = sanitizePrefs({ sources: ['willhaben', 'immoscout', 'rentola'] });
+  assert.deepEqual(fromOldAll.sources, ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify']);
+
+  const fromStrippedOld = sanitizePrefs({ sources: ['willhaben', 'immoscout'] });
+  assert.deepEqual(fromStrippedOld.sources, ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify']);
+
+  const singleSource = sanitizePrefs({ sources: ['willhaben'] });
+  assert.deepEqual(singleSource.sources, ['willhaben']);
 });

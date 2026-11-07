@@ -1,4 +1,4 @@
-import { fetchText, sleep } from '../http.js';
+import { fetchText, htmlToText, sleep } from '../http.js';
 import { districtFromPostcode, searchRegions, stateFromPostcode, stateIdFromName, toNumber } from '../geo.js';
 
 const BASE = 'https://www.willhaben.at';
@@ -10,6 +10,8 @@ const PATHS = {
 const ROOM_BUCKETS = [[1, 1, '1X1'], [2, 2, '2X2'], [3, 3, '3X3'], [4, 4, '4X4'], [5, 5, '5X5'], [6, 9, '6X9'], [10, Infinity, '10X']];
 const ROWS = 90;
 const MAX_PAGES = 15;
+const DETAIL_CONCURRENCY = 3;
+const MAX_DETAIL_FETCHES_PER_RUN = 120;
 
 export const id = 'willhaben';
 export const label = 'willhaben';
@@ -74,7 +76,7 @@ function normalize(ad, type, region) {
   };
 }
 
-export async function search(prefs, { onProgress = () => {} } = {}) {
+export async function search(prefs, { onProgress = () => {}, stored } = {}) {
   const listings = [];
   for (const region of searchRegions(prefs.states)) {
     for (const type of prefs.types.filter((t) => PATHS[t])) {
@@ -86,11 +88,75 @@ export async function search(prefs, { onProgress = () => {} } = {}) {
         const ads = result.advertSummaryList?.advertSummary ?? [];
         if (!ads.length) break;
         fetched += ads.length;
-        listings.push(...ads.map((ad) => normalize(ad, type, region)));
+        const validAds = ads
+          .map((ad) => normalize(ad, type, region))
+          .filter((l) => l.price != null && l.price > 0);
+        listings.push(...validAds);
         onProgress(listings.length);
         await sleep(800);
       }
     }
   }
+  await addDetails(listings, stored);
+  return listings;
+}
+
+export function parseDetails(html) {
+  if (!html) return null;
+  const m = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s.exec(html);
+  if (!m) return null;
+  try {
+    const data = JSON.parse(m[1]);
+    const ad = data?.props?.pageProps?.advertDetails;
+    if (!ad) return { inactive: true };
+    const descAttr = ad.attributes?.attribute?.find((a) => a.name === 'DESCRIPTION');
+    const rawDesc = descAttr?.values?.[0];
+    return {
+      inactive: false,
+      description: rawDesc ? htmlToText(rawDesc) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchDetails(url) {
+  if (!url) return null;
+  const target = url.startsWith('http') ? url : `${BASE}/iad/object?adId=${url}`;
+  const html = await fetchText(target, { retries: 1 });
+  return parseDetails(html);
+}
+
+export async function addDetails(listings, stored) {
+  const pending = [];
+  for (const listing of listings) {
+    const known = stored?.get(listing.id);
+    if (known?.detailsAt || (known?.description && !known.description.endsWith('...'))) {
+      listing.description = known.description;
+      listing.detailsAt = known.detailsAt ?? new Date().toISOString();
+    } else {
+      pending.push(listing);
+    }
+  }
+
+  const queue = pending.slice(0, MAX_DETAIL_FETCHES_PER_RUN);
+  let failed = 0;
+
+  await Promise.all(Array.from({ length: DETAIL_CONCURRENCY }, async () => {
+    for (let listing = queue.shift(); listing; listing = queue.shift()) {
+      try {
+        const details = await fetchDetails(listing.url);
+        if (details?.description) {
+          listing.description = details.description;
+          listing.detailsAt = new Date().toISOString();
+        }
+      } catch {
+        failed++;
+      }
+      await sleep(300);
+    }
+  }));
+
+  if (failed) console.warn(`[willhaben] ${failed} detail pages failed, retrying next run`);
   return listings;
 }

@@ -52,11 +52,16 @@ export function districtFromPostcode(postcode) {
 }
 
 export function findPostcode(text) {
-  return /\b([1-9]\d{3})\s+\p{L}/u.exec(text ?? '')?.[1] ?? null;
+  if (!text) return null;
+  return /\b([1-9]\d{3})[,\s-]+(?!(?:Euro|EUR|m2|m²|qm|monat|monatlich|brutto|netto|kaution)\b)\p{L}/ui.exec(text)?.[1]
+    || /\(([1-9]\d{3})\)/.exec(text)?.[1]
+    || null;
 }
 
 export function cityFromAddress(text) {
-  const city = /\b[1-9]\d{3}\s+([^,]+)/u.exec(text ?? '')?.[1]?.trim();
+  if (!text) return null;
+  const city = /\b[1-9]\d{3}[,\s-]+([^,()]+)/u.exec(text)?.[1]?.trim()
+    || /([^,()]+)\s+\([1-9]\d{3}\)/u.exec(text)?.[1]?.trim();
   return city ? city.replace(/^Vienna$/i, 'Wien') : null;
 }
 

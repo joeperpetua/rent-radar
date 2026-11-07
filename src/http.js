@@ -16,14 +16,19 @@ export function decodeEntities(text) {
   }) ?? text;
 }
 
-export async function fetchText(url, { retries = 2, timeout = 20000, accept } = {}) {
-  const headers = accept ? { ...HEADERS, Accept: accept } : HEADERS;
+export async function fetchText(url, { retries = 2, timeout = 20000, accept, headers: customHeaders, full = false } = {}) {
+  const headers = {
+    ...HEADERS,
+    ...(accept ? { Accept: accept } : {}),
+    ...(customHeaders || {}),
+  };
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeout), redirect: 'follow' });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-      return await res.text();
+      const text = await res.text();
+      return full ? { text, url: res.url, status: res.status } : text;
     } catch (err) {
       lastErr = err;
       if (attempt < retries) await sleep(1000 * (attempt + 1));

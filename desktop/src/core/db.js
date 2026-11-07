@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { sanitizePrefs } from './prefs.js';
 
 const REMOVED_RETENTION_DAYS = 90;
 
@@ -141,6 +142,8 @@ function prepare() {
       WHERE ph.listing_id IN (SELECT listing_id FROM price_history GROUP BY listing_id HAVING COUNT(*) > 1)
       ORDER BY ph.listing_id, ph.seen_at`),
     listingsBySource: db.prepare('SELECT id, data FROM listings WHERE source = ?'),
+    listingById: db.prepare('SELECT id, data FROM listings WHERE id = ?'),
+    updateListingData: db.prepare('UPDATE listings SET data = ? WHERE id = ?'),
     favorites: db.prepare('SELECT listing_id FROM favorites ORDER BY created_at'),
     addFavorite: db.prepare('INSERT OR IGNORE INTO favorites (listing_id, created_at) VALUES (?, ?)'),
     removeFavorite: db.prepare('DELETE FROM favorites WHERE listing_id = ?'),
@@ -202,7 +205,7 @@ function searchRow(row) {
   return {
     id: row.id,
     name: row.name,
-    prefs: JSON.parse(row.prefs),
+    prefs: sanitizePrefs(JSON.parse(row.prefs)),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     scanScope: row.scan_scope ? JSON.parse(row.scan_scope) : null,
@@ -321,6 +324,22 @@ export function getChangedPriceHistories(searchId) {
 
 export function getStoredListings(source) {
   return new Map(statements.listingsBySource.all(source).map((row) => [row.id, JSON.parse(row.data)]));
+}
+
+export function getListing(id) {
+  const row = statements.listingById.get(id);
+  return row ? JSON.parse(row.data) : null;
+}
+
+export function updateListingData(id, patch) {
+  return transaction(() => {
+    const row = statements.listingById.get(id);
+    if (!row) return null;
+    const updatedData = { ...JSON.parse(row.data), ...patch };
+    statements.updateListingData.run(JSON.stringify(updatedData), id);
+    bumpVersion();
+    return updatedData;
+  });
 }
 
 export const getFavorites = () => statements.favorites.all().map((row) => row.listing_id);

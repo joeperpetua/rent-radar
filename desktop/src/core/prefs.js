@@ -2,7 +2,8 @@ import { CATEGORIES } from './categories.js';
 import { STATES } from './geo.js';
 
 export const PROPERTY_TYPES = ['apartment', 'house'];
-export const SOURCE_IDS = ['willhaben', 'immoscout', 'rentola'];
+export const SOURCE_IDS = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
+export const NEW_SOURCES = ['cooperatives', 'justimmo', 'wunderflats', 'fify'];
 const STATE_IDS = STATES.map((s) => s.id);
 const RANGES = [['minPrice', 'maxPrice'], ['minArea', 'maxArea'], ['minRooms', 'maxRooms']];
 export const SCRAPE_KEYS = ['states', 'types', 'sources', ...RANGES.flat()];
@@ -60,7 +61,13 @@ export function sanitizePrefs(input = {}) {
   const picked = [...new Set((list(input.states) ?? []).filter((s) => STATE_IDS.includes(s)))];
   const states = picked.length === STATE_IDS.length ? [] : picked;
   const districts = [...new Set((list(input.districts) ?? []).map(Number).filter((d) => d >= 1 && d <= 23))].sort((a, b) => a - b);
-  const sources = (list(input.sources) ?? SOURCE_IDS).filter((s) => SOURCE_IDS.includes(s));
+  let rawSources = list(input.sources);
+  if (rawSources && rawSources.length > 0) {
+    if (rawSources.includes('rentola') || (rawSources.includes('willhaben') && rawSources.includes('immoscout') && !NEW_SOURCES.some((s) => rawSources.includes(s)))) {
+      rawSources = [...rawSources.filter((s) => s !== 'rentola'), ...NEW_SOURCES];
+    }
+  }
+  const sources = (rawSources ?? SOURCE_IDS).filter((s) => SOURCE_IDS.includes(s));
   const pair = (minKey, maxKey, limit) => {
     const min = int(input[minKey], 0, limit, 0);
     const max = int(input[maxKey], 0, limit, 0);

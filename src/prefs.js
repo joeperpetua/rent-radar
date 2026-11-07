@@ -9,6 +9,9 @@ export const SCRAPE_KEYS = ['states', 'types', 'sources', ...RANGES.flat()];
 const GUEST_SEARCH_MAX_AGE_MS = Number(process.env.GUEST_SEARCH_DAYS ?? 7) * 24 * 60 * 60 * 1000;
 const GUEST_SEARCH_MAX_ROWS = 5000;
 
+export const SOURCE_IDS = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
+export const NEW_SOURCES = ['cooperatives', 'justimmo', 'wunderflats', 'fify'];
+
 export const DEFAULT_PREFS = {
   states: [],
   districts: [],
@@ -20,10 +23,10 @@ export const DEFAULT_PREFS = {
   maxArea: 0,
   minRooms: 0,
   maxRooms: 0,
-  sources: ['willhaben', 'immoscout', 'rentola'],
+  sources: SOURCE_IDS,
 };
 
-const withDefaults = (saved) => ({ ...DEFAULT_PREFS, ...('states' in saved ? {} : { states: ['wien'] }), ...saved });
+const withDefaults = (saved) => sanitizePrefs({ ...DEFAULT_PREFS, ...('states' in saved ? {} : { states: ['wien'] }), ...saved });
 
 export const hasSavedSearch = (userId) => getUserPrefs(userId) != null;
 
@@ -72,7 +75,7 @@ export function sanitizePrefs(input) {
     const n = Number.parseInt(v, 10);
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
   };
-  const known = DEFAULT_PREFS.sources;
+  const known = SOURCE_IDS;
   const types = (input.types ?? DEFAULT_PREFS.types).filter((t) => PROPERTY_TYPES.includes(t));
   const categories = (input.categories ?? CATEGORIES).filter((c) => CATEGORIES.includes(c));
   const picked = [...new Set((input.states ?? []).filter((s) => STATE_IDS.includes(s)))];
@@ -83,6 +86,12 @@ export function sanitizePrefs(input) {
     const max = int(input[maxKey], 0, limit, 0);
     return max && max < min ? { [minKey]: max, [maxKey]: min } : { [minKey]: min, [maxKey]: max };
   };
+  let rawSources = input.sources;
+  if (Array.isArray(rawSources) && rawSources.length > 0) {
+    if (rawSources.includes('rentola') || (rawSources.includes('willhaben') && rawSources.includes('immoscout') && !NEW_SOURCES.some((s) => rawSources.includes(s)))) {
+      rawSources = [...rawSources.filter((s) => s !== 'rentola'), ...NEW_SOURCES];
+    }
+  }
   return {
     states,
     districts: (!states.length || states.includes('wien')) && districts.length < 23 ? districts : [],
@@ -91,6 +100,6 @@ export function sanitizePrefs(input) {
     ...pair('minPrice', 'maxPrice', 100000),
     ...pair('minArea', 'maxArea', 10000),
     ...pair('minRooms', 'maxRooms', 50),
-    sources: (input.sources ?? known).filter((s) => known.includes(s)),
+    sources: (rawSources ?? known).filter((s) => known.includes(s)),
   };
 }

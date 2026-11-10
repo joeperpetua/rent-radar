@@ -1,6 +1,6 @@
 # RentRadar Austria — Chrome extension (V3)
 
-Browser-only version of the desktop app in `../desktop`. Same scrapers, dedup, saved searches and UI. No server and no Electron:
+Scans Austrian rental portals, dedups listings and keeps saved searches. Everything runs in the browser, no server:
 
 - Scans run inside the extension's own page. Extension pages with `host_permissions` can fetch the portals cross-origin, which a normal web page can't (none of the portals send CORS headers).
 - All data lives in IndexedDB on the extension's origin. `unlimitedStorage` protects it from eviction.
@@ -11,7 +11,7 @@ Browser-only version of the desktop app in `../desktop`. Same scrapers, dedup, s
 2. **Load unpacked** → pick `extension/src`.
 3. Click the toolbar icon. It opens the app tab, or focuses the tab if it's already open.
 
-Requires Chrome 116+ (`chrome.runtime.getContexts`). Translation and the AI location rating need Chrome 138+ (`Translator`, `LanguageModel`). Unlike in Electron, both work here.
+Requires Chrome 116+ (`chrome.runtime.getContexts`). Translation and the AI location rating need Chrome 138+ (`Translator`, `LanguageModel`).
 
 ```bash
 npm install
@@ -48,29 +48,34 @@ IndexedDB database `rentradar`, object stores:
 - `scans`: one record per scan, with per-portal results in `sources` (ok, error, count, ms, partial)
 - `favorites`, `settings`, `meta` (data version for the view cache)
 
-Unlike desktop, deleting a search keeps everything it found. A listing missing from a complete scan is marked removed for that search only. Failed or partial scans never remove anything. Removed rows are purged after 90 days, and listings no search references are deleted.
+Deleting a search keeps everything it found. A listing missing from a complete scan is marked removed for that search only. Failed or partial scans never remove anything. Removed rows are purged after 90 days, and listings no search references are deleted.
+
+Searches saved by an earlier version, where an empty group meant "any", are migrated to everything ticked (DB version 2).
 
 Inspect or clear the data in DevTools on the app tab → Application → IndexedDB.
 
 ## Layout
 
 ```
-src/manifest.json   MV3 manifest, host permissions for the three portals
+src/manifest.json   MV3 manifest, host permissions for willhaben, ImmoScout24 and https://*/*
 src/background.js   toolbar click → open/focus the app tab; closes duplicate app tabs
 src/core/           db.js (IndexedDB), api.js, scan.js, prefs, dedup, categories, geo, http, sources/*
-src/app/            UI (from desktop/src/renderer) + bridge.js
+src/app/            UI + bridge.js
 ```
 
-- `bridge.js` replaces Electron's preload and main process. It opens the DB and exposes the same `window.rentradar.call` / `onScanStatus` API to `app.js`.
+- `bridge.js` opens the DB and exposes the `window.rentradar.call` / `onScanStatus` API to `app.js`.
 - Only one app tab runs at a time (Web Locks). A second one hands focus to the first and closes, so two scan queues never run at once.
 - Scans stop if the app tab is closed. Nothing scans in the background.
-
-## Differences from desktop
-
-- `db.js` is rewritten for IndexedDB with the same exports, all async. `scan.js` and `api.js` changed only by adding `await`.
 - `http.js` doesn't set `User-Agent`, so the browser sends its own.
-- `immoscout.js` hashes its persisted query with `crypto.subtle` instead of `node:crypto`.
-- Searches saved by an earlier version, where an empty group meant "any", are migrated to everything ticked (DB version 2).
-- The UI is the desktop renderer plus Lucide icons, the scan radar and animations.
-- Everything else (`dedup`, `categories`, `geo`, the other sources) is a straight copy.
-- The portals' terms of use still apply (see the parent README).
+
+## Portal terms of use
+
+Checked 2026-11-05. ImmoScout24, willhaben and Rentola all forbid automated access without written permission:
+
+| Portal | Clause | Also forbids |
+|---|---|---|
+| ImmoScout24 ([AGB für Verbraucher](https://www.immobilienscout24.at/unternehmen/AGB/agb-fuer-verbraucher.html) §5(2), Stand 17.02.2024) | automated queries by scripts, bots or crawlers, data mining or extraction, unless allowed in writing | building your own database from the data, commercial use, linking the database with other (meta-)databases. It also claims database and database-work rights (§5(1)). |
+| willhaben ([Nutzungsbedingungen](https://www.willhaben.at/iad/nutzungsbedingungen) §2, §3) | copying, publishing or making content available without the rights holders' consent, explicitly including copying by robots/crawlers | use of the data for commercial purposes or on other websites (§3) |
+| Rentola ([Terms](https://rentola.at/en/terms-and-conditions) §3) | bots, scrapers, crawlers or other automated means without prior written permission | infringing third-party IP; rights in listing content stay with the rights holders (§6). UK law. |
+
+Private use is still a breach of contract, but low-risk at its current volume.

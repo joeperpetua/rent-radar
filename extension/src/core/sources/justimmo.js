@@ -1,125 +1,105 @@
-import { fetchText } from '../http.js';
-import { cityFromAddress, districtFromPostcode, findPostcode, stateFromPostcode } from '../geo.js';
-import { parseDirectListing } from './directParser.js';
+import { decodeEntities, fetchText } from '../http.js';
+import { cityFromAddress, districtFromPostcode, findPostcode, stateFromPostcode, toNumber } from '../geo.js';
+import { PARSER_VERSION, parseDirectListing } from './directParser.js';
+import { applyPrefs, fetchPages, maxNumber, outOfScope, pMap, reusable } from './crawl.js';
 
-export const id = 'justimmo';
-export const label = 'JustImmo Makler';
+const FEDERAL_STATES = { burgenland: 126, kaernten: 127, niederoesterreich: 128, oberoesterreich: 129, salzburg: 130, steiermark: 131, tirol: 132, vorarlberg: 133, wien: 134 };
 
-const BROKERS = [
-  {
-    name: 'IMMOcontract',
-    host: 'immocontract.at',
-    searchUrl: 'https://www.immocontract.at/immosuche?f%5Ball%5D%5Bmarketing_type%5D=rent',
-    linkPattern: /href="([^"]*\/objektdetail\/[^"]*)"/gi,
-    resolveUrl: (href) => (href.startsWith('http') ? href : `https://www.immocontract.at${href}`),
+export function filterQuery(prefs) {
+  const params = new URLSearchParams({ 'f[occupancy]': 'living', 'f[living][marketing_type]': 'rent' });
+  if (prefs?.states?.length === 1 && FEDERAL_STATES[prefs.states[0]]) params.set('f[living][federal_state]', String(FEDERAL_STATES[prefs.states[0]]));
+  if (prefs?.maxPrice) params.set('f[living][price][max]', String(prefs.maxPrice));
+  if (prefs?.minArea) params.set('f[living][sorting_area][min]', String(prefs.minArea));
+  if (prefs?.maxArea) params.set('f[living][sorting_area][max]', String(prefs.maxArea));
+  if (prefs?.minRooms) params.set('f[living][rooms][min]', String(prefs.minRooms));
+  if (prefs?.maxRooms) params.set('f[living][rooms][max]', String(prefs.maxRooms));
+  return params.toString();
+}
+
+const broker = (id, name, host, path) => ({
+  id,
+  name,
+  host,
+  origin: `https://www.${host}`,
+  withPrefs(prefs) {
+    const query = filterQuery(prefs);
+    return { ...this, pageUrl: (n) => `https://www.${host}${path}${n > 1 ? `/p/${n}` : ''}?${query}` };
   },
-  {
-    name: 'Lebenswert Wohnen',
-    host: 'lebenswert-wohnen.at',
-    searchUrl: 'https://www.lebenswert-wohnen.at/suche?f%5Ball%5D%5Bmarketing_type%5D=rent',
-    linkPattern: /href="([^"]*\/objekt(?:detail)?\/[^"]*)"/gi,
-    resolveUrl: (href) => (href.startsWith('http') ? href : `https://www.lebenswert-wohnen.at${href}`),
-  },
-  {
-    name: 'Novel Real',
-    host: 'novel-real.at',
-    searchUrl: 'https://www.novel-real.at/de/immobilien?f%5Ball%5D%5Bmarketing_type%5D=rent',
-    linkPattern: /href="([^"]*\/objekt(?:detail)?\/[^"]*)"/gi,
-    resolveUrl: (href) => (href.startsWith('http') ? href : `https://www.novel-real.at${href}`),
-  },
-  {
-    name: 'Wohnreich',
-    host: 'wohnreich.at',
-    searchUrl: 'https://www.wohnreich.at/miete',
-    linkPattern: /href="([^"]*\/objekt(?:detail)?\/[^"]*)"/gi,
-    resolveUrl: (href) => (href.startsWith('http') ? href : `https://www.wohnreich.at${href}`),
-  },
-  {
-    name: 'Immovent',
-    host: 'immovent.at',
-    searchUrl: 'https://www.immovent.at/wohnungen-miete',
-    linkPattern: /href="([^"]*\/objekt(?:detail)?\/[^"]*)"/gi,
-    resolveUrl: (href) => (href.startsWith('http') ? href : `https://www.immovent.at${href}`),
-  },
+  lastPage: (html) => maxNumber(html, /\/p\/(\d+)\?/g),
+});
+
+export const BROKERS = [
+  broker('immocontract', 'IMMOcontract', 'immocontract.at', '/immosuche'),
+  broker('lebenswert', 'Lebenswert Wohnen', 'lebenswert-wohnen.at', '/suche'),
+  broker('novelreal', 'Novel Real', 'novel-real.at', '/de/immobilien'),
+  broker('wohnreich', 'Wohnreich', 'wohnreich.at', '/miete'),
+  broker('immovent', 'Immovent', 'immovent.at', '/alle-immobilien'),
 ];
 
-async function pMap(items, concurrency, fn) {
-  const results = [];
-  let index = 0;
-  const workers = Array.from({ length: Math.min(items.length, concurrency) }, async () => {
-    while (index < items.length) {
-      const i = index++;
-      results[i] = await fn(items[i], i);
-    }
-  });
-  await Promise.all(workers);
-  return results.filter(Boolean);
+export function parseCards(html, origin) {
+  const cards = new Map();
+  for (const chunk of html.split(/class="panel panel-default"/).slice(1)) {
+    const href = /href="([^"]*\/objekt(?:detail)?\/(\d+))[^"]*"/.exec(chunk);
+    if (!href || cards.has(href[2])) continue;
+    cards.set(href[2], {
+      sourceId: href[2],
+      url: new URL(href[1], origin).href,
+      postcode: /class="zip-city">\s*(\d{4})\b/.exec(chunk)?.[1] ?? null,
+      price: toNumber(/info-price[\s\S]*?list-item-value">\s*([\d.,]+)/.exec(chunk)?.[1]),
+    });
+  }
+  return [...cards.values()];
 }
 
-export async function fetchBrokerLinks(broker) {
-  try {
-    const html = await fetchText(broker.searchUrl, { retries: 1, timeout: 8000 });
-    const matches = [...html.matchAll(broker.linkPattern)].map((m) => broker.resolveUrl(m[1].replace(/&amp;/g, '&')));
-    return [...new Set(matches)];
-  } catch (err) {
-    console.warn(`[justimmo] ${broker.name} search failed:`, err?.message);
-    return [];
-  }
+export async function fetchBrokerCards(b, prefs) {
+  const pages = await fetchPages(b.withPrefs(prefs), b.id);
+  const seen = new Set();
+  return pages.flatMap((html) => parseCards(html, b.origin)).filter((c) => !seen.has(c.sourceId) && seen.add(c.sourceId));
 }
 
-export async function search(prefs, { onProgress = () => {}, stored } = {}) {
-  const allLinks = [];
-  for (const broker of BROKERS) {
-    const links = await fetchBrokerLinks(broker);
-    for (const url of links) allLinks.push({ broker, url });
-  }
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export async function searchBroker(b, prefs, { onProgress = () => {}, stored } = {}) {
+  const candidates = (await fetchBrokerCards(b, prefs)).filter((card) => !outOfScope(card, prefs));
+  const brandSuffix = new RegExp(`\\s*[-|–]\\s*${escapeRegExp(b.name.split(' ')[0])}.*$`, 'i');
 
   let count = 0;
-  const listings = await pMap(allLinks, 4, async ({ broker, url }) => {
+  const listings = await pMap(candidates, 6, async (card) => {
     try {
-      const u = new URL(url);
-      const host = u.hostname.replace(/^www\./i, '');
-      const idMatch = /\/objekt(?:detail)?\/(\d+)/.exec(url);
-      const sourceId = idMatch ? idMatch[1] : url;
-      const listingId = `justimmo:${broker.host}_${sourceId}`;
-
+      const listingId = `immo:${b.id}:${card.sourceId}`;
       const known = stored?.get(listingId);
-      if (known) {
-        const isCorruptedDefault = known.postcode === '1010' && (known.address === 'Wien' || !known.address);
-        const needsSaleCheck = known.forSale == null;
-        if (!isCorruptedDefault && !needsSaleCheck) {
-          if (known.forSale || known.price == null || known.price <= 0) return null;
-          count++;
-          onProgress(count);
-          return known;
-        }
+      if (reusable(known)) {
+        if (known.forSale || known.price == null || known.price <= 0) return null;
+        onProgress(++count);
+        return known;
       }
 
-      const pageHtml = await fetchText(url, { retries: 1, timeout: 8000 });
-      const parsed = parseDirectListing(pageHtml, url);
+      const pageHtml = await fetchText(card.url, { retries: 1, timeout: 10000 });
+      const parsed = parseDirectListing(pageHtml, card.url);
       if (parsed.inactive || parsed.forSale || parsed.price == null || parsed.price <= 0) return null;
 
-      const title = (pageHtml.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] || `${broker.name} Objekt`)
-        .replace(/\s*-\s*(?:IMMOcontract|Lebenswert|Novel Real|Wohnreich|Immovent).*$/i, '')
+      const title = decodeEntities(pageHtml.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] || `${b.name} Objekt`)
+        .replace(brandSuffix, '')
         .replace(/\s+/g, ' ')
         .trim();
 
-      const postcode = findPostcode(parsed.address) || findPostcode(parsed.description) || findPostcode(title);
+      const postcode = findPostcode(parsed.address) || card.postcode || findPostcode(parsed.description) || findPostcode(title);
       const state = stateFromPostcode(postcode);
       const district = state === 'wien' ? districtFromPostcode(postcode) : null;
       const city = cityFromAddress(parsed.address) || (state === 'wien' ? 'Wien' : null);
       const address = parsed.address || [postcode, city].filter(Boolean).join(' ') || null;
 
-      count++;
-      onProgress(count);
+      onProgress(++count);
 
       return {
         id: listingId,
-        source: 'justimmo',
-        sourceId: `${broker.host}_${sourceId}`,
+        source: 'immo',
+        sourceId: `${b.id}:${card.sourceId}`,
+        sourceName: b.name,
+        parserVersion: PARSER_VERSION,
         type: 'apartment',
         forSale: false,
-        url,
+        url: card.url,
         title,
         price: parsed.price,
         area: parsed.area,
@@ -134,13 +114,11 @@ export async function search(prefs, { onProgress = () => {}, stored } = {}) {
         lng: parsed.lng ?? null,
         images: parsed.images || [],
         description: parsed.description,
-        sourceUrl: url,
-        sourceHost: host,
+        sourceUrl: card.url,
+        sourceHost: b.host,
         publishedAt: null,
         isPrivate: false,
-        agency: parsed.agency || broker.name,
-        agencyPhone: parsed.agencyPhone || null,
-        agencyEmail: parsed.agencyEmail || null,
+        agency: parsed.agency || b.name,
         floor: null,
         extras: [],
       };
@@ -149,15 +127,6 @@ export async function search(prefs, { onProgress = () => {}, stored } = {}) {
     }
   });
 
-  let filtered = listings.filter((l) => l && l.price != null && l.price > 0);
-  if (prefs?.states?.length) filtered = filtered.filter((l) => l.state && prefs.states.includes(l.state));
-  if (prefs?.districts?.length) filtered = filtered.filter((l) => l.state !== 'wien' || (l.district && prefs.districts.includes(l.district)));
-  if (prefs?.minPrice) filtered = filtered.filter((l) => l.price >= prefs.minPrice);
-  if (prefs?.maxPrice) filtered = filtered.filter((l) => l.price <= prefs.maxPrice);
-  if (prefs?.minArea) filtered = filtered.filter((l) => l.area == null || l.area >= prefs.minArea);
-  if (prefs?.maxArea) filtered = filtered.filter((l) => l.area == null || l.area <= prefs.maxArea);
-  if (prefs?.minRooms) filtered = filtered.filter((l) => l.rooms == null || l.rooms >= prefs.minRooms);
-  if (prefs?.maxRooms) filtered = filtered.filter((l) => l.rooms == null || l.rooms <= prefs.maxRooms);
-
-  return filtered;
+  return applyPrefs(listings, prefs);
 }
+

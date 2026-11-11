@@ -76,7 +76,7 @@ test('searches saved when empty meant "any" are migrated to everything ticked', 
 
 test('migrates rentola or legacy all-portals search to include new sources', () => {
   const fromRentola = sanitizePrefs({ sources: ['rentola'] });
-  assert.deepEqual(fromRentola.sources, ['cooperatives', 'justimmo', 'wunderflats', 'fify']);
+  assert.deepEqual(fromRentola.sources, SOURCE_IDS.filter((s) => s !== 'willhaben' && s !== 'immoscout'));
 
   const fromOldAll = sanitizePrefs({ sources: ['willhaben', 'immoscout', 'rentola'] });
   assert.deepEqual(fromOldAll.sources, SOURCE_IDS);
@@ -86,4 +86,9 @@ test('migrates rentola or legacy all-portals search to include new sources', () 
 
   const singleSource = sanitizePrefs({ sources: ['willhaben'] });
   assert.deepEqual(singleSource.sources, ['willhaben']);
+});
+
+test('legacy and per-broker sources collapse into Immo, cooperatives expand', () => {
+  assert.deepEqual(sanitizePrefs({ sources: ['willhaben', 'justimmo', 'cooperatives'] }).sources, ['willhaben', 'immo', 'bwsg', 'oevw', 'nebau']);
+  assert.deepEqual(sanitizePrefs({ sources: ['fify', 'immocontract', 'edlauer'] }).sources, ['immo']);
 });

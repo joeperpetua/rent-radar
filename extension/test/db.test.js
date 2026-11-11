@@ -96,3 +96,31 @@ test('only widening a scan-relevant filter needs a rescan', async () => {
   assert.equal(needsRescan(sanitizePrefs({ states: ['wien'], districts: [2], categories: ['regular'], maxPrice: 1000, types: ['apartment'] }), scope), false);
   assert.equal(needsRescan(sanitizePrefs({}), null), true);
 });
+
+test('a source saved on its own shows up before the scan finishes, and the final save only records the run', async () => {
+  const search = await db.createSearch('Streaming', prefs);
+  const at = '2026-03-01T00:00:00.000Z';
+  const fast = { key: 'willhaben', listings: [listing('fast1'), listing('fast2')], ms: 1 };
+  const version = await db.dataVersion();
+  fast.written = await db.saveSourceResult({ searchId: search.id, startedAt: at, result: fast });
+  assert.equal(fast.written, true);
+  assert.ok((await db.dataVersion()) > version);
+  assert.deepEqual(await ids(search), ['willhaben:fast1', 'willhaben:fast2']);
+  assert.equal((await db.getRuns(search.id)).willhaben, undefined);
+
+  await scan(search, at, [fast, { key: 'immoscout', error: 'timeout', ms: 9 }]);
+  assert.deepEqual(await ids(search), ['willhaben:fast1', 'willhaben:fast2']);
+  const runs = await db.getRuns(search.id);
+  assert.equal(runs.willhaben.count, 2);
+  assert.equal(runs.immoscout.ok, false);
+});
+
+test('legacy and per-broker listing ids map onto the Immo source', async () => {
+  const { migrateListingId } = await import('../src/core/legacy.js');
+  assert.deepEqual(migrateListingId('justimmo:novel-real.at_15016204'), { id: 'immo:novelreal:15016204', source: 'immo', sourceId: 'novelreal:15016204', sourceName: 'Novel Real' });
+  assert.deepEqual(migrateListingId('fify:edlauer.com_schoene-wohnung-abc'), { id: 'immo:edlauer:schoene-wohnung-abc', source: 'immo', sourceId: 'edlauer:schoene-wohnung-abc', sourceName: 'Edlauer' });
+  assert.deepEqual(migrateListingId('immocontract:42'), { id: 'immo:immocontract:42', source: 'immo', sourceId: 'immocontract:42', sourceName: 'IMMOcontract' });
+  assert.deepEqual(migrateListingId('cooperatives:övw_130-bruno-marek-allee'), { id: 'oevw:130-bruno-marek-allee', source: 'oevw', sourceId: '130-bruno-marek-allee' });
+  assert.equal(migrateListingId('immo:immocontract:42'), null);
+  assert.equal(migrateListingId('willhaben:123'), null);
+});

@@ -43,3 +43,8 @@ test('a group is shown only when all of its categories are selected', () => {
   assert.equal(passesCategories(['council', 'swap'], ['regular', 'council']), false);
   assert.equal(passesCategories(['regular'], ['council']), false);
 });
+
+test('every listing from a cooperative source is a cooperative', () => {
+  for (const source of ['bwsg', 'oevw', 'nebau']) assert.ok(classify({ source, title: '3-Zimmer Wohnung' }).has('cooperative'));
+  assert.ok(!classify({ source: 'immocontract', title: '3-Zimmer Wohnung' }).has('cooperative'));
+});

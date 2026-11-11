@@ -47,7 +47,7 @@ export const handlers = {
     districts: DISTRICTS,
     types: PROPERTY_TYPES,
     categories: CATEGORIES,
-    sources: Object.entries(SOURCES).map(([id, s]) => ({ id, label: s.label })),
+    sources: Object.entries(SOURCES).map(([id, s]) => ({ id, label: s.label, kind: s.kind })),
   }),
 
   searches: async () => (await listSearches()).map(summary),

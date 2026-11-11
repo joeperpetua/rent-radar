@@ -1,7 +1,8 @@
-import { fillUnspecified, sanitizePrefs } from './prefs.js';
+import { addV4Sources, expandLegacySources, fillUnspecified, sanitizePrefs } from './prefs.js';
+import { LEGACY_SOURCE_IDS, migrateListingId } from './legacy.js';
 
 const DB_NAME = 'rentradar';
-const DB_VERSION = 3;
+const DB_VERSION = 6;
 const REMOVED_RETENTION_DAYS = 90;
 
 const LISTINGS = 'listings';
@@ -16,15 +17,48 @@ let db = null;
 
 function upgrade(idb, from, t) {
   if (from < 1) createStores(idb);
-  if (from < 3) {
+  if (from >= 1 && from < 6) {
     eachCursor(t.objectStore(SEARCHES).openCursor(), (c) => {
       let prefs = c.value?.prefs;
       if (!prefs) return;
       if (from < 2) prefs = fillUnspecified(prefs);
-      prefs = sanitizePrefs(prefs);
-      c.update({ ...c.value, prefs });
+      if (from < 3) prefs = sanitizePrefs(prefs);
+      if (from < 4) prefs = addV4Sources(prefs);
+      c.update({ ...c.value, prefs: { ...prefs, sources: expandLegacySources(prefs.sources ?? []) } });
     });
   }
+  if (from >= 1 && from < 6) splitLegacySources(idb, t);
+}
+
+function splitLegacySources(idb, t) {
+  const has = (name) => idb.objectStoreNames.contains(name);
+  if (!has(LISTINGS) || !has(MEMBERS) || !has(FAVORITES) || !has(SCANS)) return;
+  const listings = t.objectStore(LISTINGS);
+  eachCursor(listings.openCursor(), (c) => {
+    const next = migrateListingId(c.value.id);
+    if (!next) return;
+    const row = c.value;
+    listings.put({ ...row, id: next.id, source: next.source, data: { ...row.data, id: next.id, source: next.source, sourceId: next.sourceId, ...(next.sourceName ? { sourceName: next.sourceName } : {}) } });
+    c.delete();
+  });
+  const members = t.objectStore(MEMBERS);
+  eachCursor(members.openCursor(), (c) => {
+    const next = migrateListingId(c.value.listingId);
+    if (!next) return;
+    members.put({ ...c.value, listingId: next.id, source: next.source });
+    c.delete();
+  });
+  const favorites = t.objectStore(FAVORITES);
+  eachCursor(favorites.openCursor(), (c) => {
+    const next = migrateListingId(c.value.listingId);
+    if (!next) return;
+    favorites.put({ ...c.value, listingId: next.id });
+    c.delete();
+  });
+  eachCursor(t.objectStore(SCANS).openCursor(), (c) => {
+    const sources = Object.fromEntries(Object.entries(c.value.sources ?? {}).filter(([key]) => !LEGACY_SOURCE_IDS.includes(key)));
+    c.update({ ...c.value, sources });
+  });
 }
 
 function createStores(idb) {

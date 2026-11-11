@@ -3,6 +3,7 @@ import { districtFromPostcode, findPostcode, stateFromPostcode, toNumber } from 
 
 export const id = 'wunderflats';
 export const label = 'Wunderflats';
+export const kind = 'portal';
 
 const BASE = 'https://wunderflats.com';
 

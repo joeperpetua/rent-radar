@@ -4,7 +4,9 @@ import { TRANSIT_MODES, rateLocation, ratingAvailability, ratingSupported, walkM
 import { hydrateIcons, icon } from './icons.js';
 import { missingGroups } from '../core/prefs.js';
 
-const SOURCE_LABELS = { willhaben: 'willhaben', immoscout: 'ImmoScout24', cooperatives: 'Genossenschaften', justimmo: 'JustImmo', wunderflats: 'Wunderflats', fify: 'Fify' };
+const SOURCE_LABELS = {};
+const SOURCE_KINDS = ['portal', 'broker', 'cooperative'];
+const sourceLabel = (s) => s.sourceName || SOURCE_LABELS[s.source] || s.sourceHost || s.source;
 const RANGE_FIELDS = ['minPrice', 'maxPrice', 'minArea', 'maxArea', 'minRooms', 'maxRooms'];
 const VIEW_DEFAULTS = { sort: 'new', onlyNew: false, onlyMulti: false, onlyDropped: false, q: '' };
 const TOAST_LINGER_MS = 5000;
@@ -91,7 +93,7 @@ function priceHistoryHtml(g) {
       <h2>${esc(t('priceHistory'))}</h2>
       ${withHistory.map((s) => `
         <div class="history">
-          <strong class="history-source ${s.source}">${esc(SOURCE_LABELS[s.source])}</strong>
+          <strong class="history-source ${s.source}">${esc(sourceLabel(s))}</strong>
           <ol>
             ${s.priceHistory.map((h, i) => {
               const delta = i ? h.price - s.priceHistory[i - 1].price : 0;
@@ -326,12 +328,19 @@ function renderPrefs() {
       <b>${d.number}</b><span>${esc(d.name)}</span>
     </label>`).join('');
 
-  $('#sources').innerHTML = sources.map((s) => `
-    <label class="check">
-      <span class="dot ${s.id}"></span><span>${esc(s.label)}</span>
-      <span class="count" data-count="${s.id}"></span>
-      <input type="checkbox" class="switch" role="switch" name="source" value="${s.id}" ${prefs.sources.includes(s.id) ? 'checked' : ''}>
-    </label>`).join('');
+  $('#sources').innerHTML = SOURCE_KINDS.map((kind) => {
+    const group = sources.filter((s) => (s.kind ?? 'portal') === kind);
+    if (!group.length) return '';
+    return `<div class="source-group" role="group" aria-label="${esc(t(`sourceKind.${kind}`))}">
+      <span class="source-group-title">${esc(t(`sourceKind.${kind}`))}</span>
+      ${group.map((s) => `
+      <label class="check">
+        <span class="dot ${s.id}"></span><span>${esc(s.label)}</span>
+        <span class="count" data-count="${s.id}"></span>
+        <input type="checkbox" class="switch" role="switch" name="source" value="${s.id}" ${prefs.sources.includes(s.id) ? 'checked' : ''}>
+      </label>`).join('')}
+    </div>`;
+  }).join('');
 
   updateFormState();
   renderSourceCounts();
@@ -492,11 +501,15 @@ function filteredGroups() {
 
 function sourceChips(g) {
   const byPortal = new Map();
-  for (const s of g.sources) byPortal.set(s.source, [...(byPortal.get(s.source) ?? []), s]);
-  return [...byPortal].map(([source, items]) => {
+  for (const s of g.sources) {
+    const key = `${s.source}|${s.sourceName ?? ''}`;
+    byPortal.set(key, [...(byPortal.get(key) ?? []), s]);
+  }
+  return [...byPortal.values()].map((items) => {
     const primary = items[0];
+    const source = primary.source;
     const url = primary.sourceUrl || primary.url;
-    const label = SOURCE_LABELS[source] || primary.sourceHost || source;
+    const label = sourceLabel(primary);
     const title = t('openOn', { source: label });
 
     return `
@@ -918,7 +931,7 @@ function renderDetail(id) {
             <div class="origin-list">
               ${g.sources.map((s) => {
                 const url = s.sourceUrl || s.url;
-                const label = SOURCE_LABELS[s.source] || s.sourceHost || s.source;
+                const label = sourceLabel(s);
                 const actionLabel = t('openListing');
 
                 return `
@@ -1897,6 +1910,7 @@ async function init() {
   hydrateIcons();
   applyStatic();
   state.config = await api('config');
+  for (const s of state.config.sources) SOURCE_LABELS[s.id] = s.label;
   const { settings } = state.config;
   if (settings.locale) setLang(settings.locale);
   applyStyle(['styled', 'modern', 'compact'].includes(settings.style) ? settings.style : 'styled');

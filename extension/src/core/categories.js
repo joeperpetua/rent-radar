@@ -7,6 +7,7 @@ const normalize = (text) => (text ?? '')
   .replace(/[̀-ͯ]/g, '');
 
 const COUNCIL = /gemeinde ?-?wohnung|gemeindwohnung|gemeindebau|wiener wohnen|direktvergabe|wohn-?ticket|vormerkschein/;
+const COOPERATIVE_SOURCES = new Set(['bwsg', 'oevw', 'nebau']);
 const COOPERATIVE = /genossenschaft|gemeinnutzig/;
 const COOPERATIVE_AGENCY = /genossenschaft|gemeinnutzig|\bgem\. gesellschaft|volkswohnungswerk|sozialbau|gesiba|heimbau|neues leben|familienwohnbau|wogem/;
 const SHARED = /wg[- ]?zimmer|zimmer in .{0,30}\bwg\b|\bin (einer|unserer|meiner) .{0,20}\bwg\b|mitbewohner|wohngemeinschaft|room in (a |an )?(shared|flat|apartment)|flatshare|shared (flat|apartment)/;
@@ -19,7 +20,7 @@ export function classify(listing) {
   const agency = normalize(listing.agency);
   const categories = new Set();
 
-  const cooperative = COOPERATIVE.test(text) || extras.has('COOPERATIVE_HOUSING') || extras.has('Genossenschaftswohnung') || COOPERATIVE_AGENCY.test(agency);
+  const cooperative = COOPERATIVE_SOURCES.has(listing.source) || COOPERATIVE.test(text) || extras.has('COOPERATIVE_HOUSING') || extras.has('Genossenschaftswohnung') || COOPERATIVE_AGENCY.test(agency);
   if (cooperative) categories.add('cooperative');
   if (COUNCIL.test(text) || (extras.has('SOCIAL_HOUSING') && !cooperative)) categories.add('council');
   if (extras.has('Zimmer/WG') || SHARED.test(title)) categories.add('shared');

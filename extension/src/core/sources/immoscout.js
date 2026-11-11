@@ -38,6 +38,7 @@ const QUERY_HASH = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new 
 
 export const id = 'immoscout';
 export const label = 'ImmoScout24';
+export const kind = 'portal';
 
 function searchParams(prefs, type, region) {
   const params = {

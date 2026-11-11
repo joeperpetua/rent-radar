@@ -15,6 +15,7 @@ const MAX_DETAIL_FETCHES_PER_RUN = 120;
 
 export const id = 'willhaben';
 export const label = 'willhaben';
+export const kind = 'portal';
 
 function buildUrl(prefs, type, region, page) {
   const params = new URLSearchParams({ rows: String(ROWS), page: String(page) });

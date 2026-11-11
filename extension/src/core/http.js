@@ -15,7 +15,7 @@ export function decodeEntities(text) {
   }) ?? text;
 }
 
-export async function fetchText(url, { retries = 2, timeout = 20000, accept, headers: customHeaders, full = false } = {}) {
+export async function fetchText(url, { retries = 2, timeout = 20000, accept, headers: customHeaders, full = false, charset, method, body, credentials } = {}) {
   const headers = {
     ...HEADERS,
     ...(accept ? { Accept: accept } : {}),
@@ -24,9 +24,9 @@ export async function fetchText(url, { retries = 2, timeout = 20000, accept, hea
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeout), redirect: 'follow' });
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeout), redirect: 'follow', ...(method ? { method } : {}), ...(body ? { body } : {}), ...(credentials ? { credentials } : {}) });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-      const text = await res.text();
+      const text = charset ? new TextDecoder(charset).decode(await res.arrayBuffer()) : await res.text();
       return full ? { text, url: res.url, status: res.status } : text;
     } catch (err) {
       lastErr = err;

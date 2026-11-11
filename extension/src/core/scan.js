@@ -1,15 +1,10 @@
-import * as willhaben from './sources/willhaben.js';
-import * as immoscout from './sources/immoscout.js';
-import * as cooperatives from './sources/cooperatives.js';
-import * as justimmo from './sources/justimmo.js';
-import * as wunderflats from './sources/wunderflats.js';
-import * as fify from './sources/fify.js';
+import { SOURCES } from './sources/index.js';
 import { dedupe } from './dedup.js';
 import { CATEGORIES, groupCategories, passesCategories } from './categories.js';
 import { effectivePrefs, isScannable, scrapeScope } from './prefs.js';
 import { dataVersion, getChangedPriceHistories, getRuns, getSearch, getStoredListings, initialScanAt, queryListings, queryRemovedListings, saveScan, saveSourceResult } from './db.js';
 
-export const SOURCES = { willhaben, immoscout, cooperatives, justimmo, wunderflats, fify };
+export { SOURCES };
 
 const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GROUP_CACHE_SIZE = 16;

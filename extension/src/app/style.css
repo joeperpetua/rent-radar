@@ -18,10 +18,15 @@
   --danger-soft: #fde8e8;
   --src-willhaben: #2f6fed;
   --src-immoscout: #0f9d8a;
-  --src-cooperatives: #10b981;
-  --src-justimmo: #f59e0b;
   --src-wunderflats: #8b5cf6;
-  --src-fify: #f43f5e;
+  --src-immo: #f59e0b;
+  --src-bwsg: #10b981;
+  --src-oevw: #047857;
+  --src-nebau: #15803d;
+  --src-derstandard: #0284c7;
+  --src-dibeo: #c026d3;
+  --src-findmyhome: #65a30d;
+  --src-sn: #a16207;
   --src-rentola: #e0662f;
   --shadow: 0 1px 2px rgba(20, 18, 14, .06), 0 4px 16px rgba(20, 18, 14, .05);
   --radius: 14px;
@@ -50,10 +55,15 @@
     --danger-soft: #3a1c1d;
     --src-willhaben: #6d9bff;
     --src-immoscout: #3fc9b4;
-    --src-cooperatives: #34d399;
-    --src-justimmo: #fbbf24;
     --src-wunderflats: #a78bfa;
-    --src-fify: #fb7185;
+    --src-immo: #fbbf24;
+    --src-bwsg: #34d399;
+    --src-oevw: #6ee7b7;
+    --src-nebau: #86efac;
+    --src-derstandard: #38bdf8;
+    --src-dibeo: #e879f9;
+    --src-findmyhome: #a3e635;
+    --src-sn: #eab308;
     --src-rentola: #ff8c57;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4);
     color-scheme: dark;
@@ -79,10 +89,15 @@
   --danger-soft: #3a1c1d;
     --src-willhaben: #6d9bff;
     --src-immoscout: #3fc9b4;
-    --src-cooperatives: #34d399;
-    --src-justimmo: #fbbf24;
     --src-wunderflats: #a78bfa;
-    --src-fify: #fb7185;
+    --src-immo: #fbbf24;
+    --src-bwsg: #34d399;
+    --src-oevw: #6ee7b7;
+    --src-nebau: #86efac;
+    --src-derstandard: #38bdf8;
+    --src-dibeo: #e879f9;
+    --src-findmyhome: #a3e635;
+    --src-sn: #eab308;
     --src-rentola: #ff8c57;
   --shadow: 0 1px 2px rgba(0, 0, 0, .4);
   color-scheme: dark;
@@ -418,10 +433,15 @@ input[type="text"] {
 .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
 .dot.willhaben { background: var(--src-willhaben); }
 .dot.immoscout { background: var(--src-immoscout); }
-.dot.cooperatives { background: var(--src-cooperatives); }
-.dot.justimmo { background: var(--src-justimmo); }
 .dot.wunderflats { background: var(--src-wunderflats); }
-.dot.fify { background: var(--src-fify); }
+.dot.immo { background: var(--src-immo); }
+.dot.bwsg { background: var(--src-bwsg); }
+.dot.oevw { background: var(--src-oevw); }
+.dot.nebau { background: var(--src-nebau); }
+.dot.derstandard { background: var(--src-derstandard); }
+.dot.dibeo { background: var(--src-dibeo); }
+.dot.findmyhome { background: var(--src-findmyhome); }
+.dot.sn { background: var(--src-sn); }
 .dot.rentola { background: var(--src-rentola); }
 
 .btn {
@@ -613,10 +633,15 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .toast-body strong { font-size: 13px; }
 .toast-body strong.willhaben { color: var(--src-willhaben); }
 .toast-body strong.immoscout { color: var(--src-immoscout); }
-.toast-body strong.cooperatives { color: var(--src-cooperatives); }
-.toast-body strong.justimmo { color: var(--src-justimmo); }
 .toast-body strong.wunderflats { color: var(--src-wunderflats); }
-.toast-body strong.fify { color: var(--src-fify); }
+.toast-body strong.immo { color: var(--src-immo); }
+.toast-body strong.bwsg { color: var(--src-bwsg); }
+.toast-body strong.oevw { color: var(--src-oevw); }
+.toast-body strong.nebau { color: var(--src-nebau); }
+.toast-body strong.derstandard { color: var(--src-derstandard); }
+.toast-body strong.dibeo { color: var(--src-dibeo); }
+.toast-body strong.findmyhome { color: var(--src-findmyhome); }
+.toast-body strong.sn { color: var(--src-sn); }
 .toast-body strong.rentola { color: var(--src-rentola); }
 .toast-text { color: var(--muted); overflow-wrap: anywhere; }
 .toast[data-state="error"] .toast-text { color: var(--warn); }
@@ -653,7 +678,9 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .check b { font-variant-numeric: tabular-nums; min-width: 22px; color: var(--muted); font-weight: 600; }
 .check .count { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
-.source-toggles { display: flex; flex-direction: column; gap: 2px; }
+.source-toggles { display: flex; flex-direction: column; gap: 10px; }
+.source-group { display: flex; flex-direction: column; gap: 2px; }
+.source-group-title { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 0 8px 2px; }
 .source-toggles .count { margin-left: auto; }
 
 .switch {
@@ -839,10 +866,15 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .history-source { font-size: 13px; }
 .history-source.willhaben { color: var(--src-willhaben); }
 .history-source.immoscout { color: var(--src-immoscout); }
-.history-source.cooperatives { color: var(--src-cooperatives); }
-.history-source.justimmo { color: var(--src-justimmo); }
 .history-source.wunderflats { color: var(--src-wunderflats); }
-.history-source.fify { color: var(--src-fify); }
+.history-source.immo { color: var(--src-immo); }
+.history-source.bwsg { color: var(--src-bwsg); }
+.history-source.oevw { color: var(--src-oevw); }
+.history-source.nebau { color: var(--src-nebau); }
+.history-source.derstandard { color: var(--src-derstandard); }
+.history-source.dibeo { color: var(--src-dibeo); }
+.history-source.findmyhome { color: var(--src-findmyhome); }
+.history-source.sn { color: var(--src-sn); }
 .history-source.rentola { color: var(--src-rentola); }
 .history ol { list-style: none; margin: 6px 0 0; padding: 0; }
 .history li {
@@ -898,10 +930,15 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .src:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 .src.willhaben { color: var(--src-willhaben); }
 .src.immoscout { color: var(--src-immoscout); }
-.src.cooperatives { color: var(--src-cooperatives); }
-.src.justimmo { color: var(--src-justimmo); }
 .src.wunderflats { color: var(--src-wunderflats); }
-.src.fify { color: var(--src-fify); }
+.src.immo { color: var(--src-immo); }
+.src.bwsg { color: var(--src-bwsg); }
+.src.oevw { color: var(--src-oevw); }
+.src.nebau { color: var(--src-nebau); }
+.src.derstandard { color: var(--src-derstandard); }
+.src.dibeo { color: var(--src-dibeo); }
+.src.findmyhome { color: var(--src-findmyhome); }
+.src.sn { color: var(--src-sn); }
 .src.rentola { color: var(--src-rentola); }
 .src.rentola-sub { color: var(--src-rentola); opacity: .85; }
 .src { transition: background .15s ease; }
@@ -1079,10 +1116,15 @@ body.lightbox-open { overflow: hidden; }
 .origin:hover { background: var(--surface-2); }
 .origin.willhaben { --src-color: var(--src-willhaben); }
 .origin.immoscout { --src-color: var(--src-immoscout); }
-.origin.cooperatives { --src-color: var(--src-cooperatives); }
-.origin.justimmo { --src-color: var(--src-justimmo); }
 .origin.wunderflats { --src-color: var(--src-wunderflats); }
-.origin.fify { --src-color: var(--src-fify); }
+.origin.immo { --src-color: var(--src-immo); }
+.origin.bwsg { --src-color: var(--src-bwsg); }
+.origin.oevw { --src-color: var(--src-oevw); }
+.origin.nebau { --src-color: var(--src-nebau); }
+.origin.derstandard { --src-color: var(--src-derstandard); }
+.origin.dibeo { --src-color: var(--src-dibeo); }
+.origin.findmyhome { --src-color: var(--src-findmyhome); }
+.origin.sn { --src-color: var(--src-sn); }
 .origin.rentola { --src-color: var(--src-rentola); }
 .origin strong { color: var(--src-color); }
 .origin .o-price { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
@@ -1238,10 +1280,15 @@ body.lightbox-open { overflow: hidden; }
 
 .radar-blip.willhaben { --blip: var(--src-willhaben); }
 .radar-blip.immoscout { --blip: var(--src-immoscout); }
-.radar-blip.cooperatives { --blip: var(--src-cooperatives); }
-.radar-blip.justimmo { --blip: var(--src-justimmo); }
 .radar-blip.wunderflats { --blip: var(--src-wunderflats); }
-.radar-blip.fify { --blip: var(--src-fify); }
+.radar-blip.immo { --blip: var(--src-immo); }
+.radar-blip.bwsg { --blip: var(--src-bwsg); }
+.radar-blip.oevw { --blip: var(--src-oevw); }
+.radar-blip.nebau { --blip: var(--src-nebau); }
+.radar-blip.derstandard { --blip: var(--src-derstandard); }
+.radar-blip.dibeo { --blip: var(--src-dibeo); }
+.radar-blip.findmyhome { --blip: var(--src-findmyhome); }
+.radar-blip.sn { --blip: var(--src-sn); }
 .radar-blip.rentola { --blip: var(--src-rentola); }
 
 .radar-core {
@@ -1308,10 +1355,15 @@ body.lightbox-open { overflow: hidden; }
 .radar-bar i { position: absolute; inset: 0; border-radius: 2px; background: var(--src); transform-origin: left; transform: scaleX(0); transition: transform .5s var(--ease-out); }
 .radar-sources li[data-source="willhaben"] { --src: var(--src-willhaben); }
 .radar-sources li[data-source="immoscout"] { --src: var(--src-immoscout); }
-.radar-sources li[data-source="cooperatives"] { --src: var(--src-cooperatives); }
-.radar-sources li[data-source="justimmo"] { --src: var(--src-justimmo); }
 .radar-sources li[data-source="wunderflats"] { --src: var(--src-wunderflats); }
-.radar-sources li[data-source="fify"] { --src: var(--src-fify); }
+.radar-sources li[data-source="immo"] { --src: var(--src-immo); }
+.radar-sources li[data-source="bwsg"] { --src: var(--src-bwsg); }
+.radar-sources li[data-source="oevw"] { --src: var(--src-oevw); }
+.radar-sources li[data-source="nebau"] { --src: var(--src-nebau); }
+.radar-sources li[data-source="derstandard"] { --src: var(--src-derstandard); }
+.radar-sources li[data-source="dibeo"] { --src: var(--src-dibeo); }
+.radar-sources li[data-source="findmyhome"] { --src: var(--src-findmyhome); }
+.radar-sources li[data-source="sn"] { --src: var(--src-sn); }
 .radar-sources li[data-source="rentola"] { --src: var(--src-rentola); }
 .radar-sources li[data-state="running"] .radar-state .icon { animation: spin 1s linear infinite; color: var(--src); }
 .radar-sources li[data-state="running"] .radar-bar i { width: 40%; transform: none; animation: indeterminate 1.3s ease-in-out infinite; }

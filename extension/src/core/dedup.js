@@ -1,6 +1,6 @@
 import { haversineMeters } from './geo.js';
 
-const SOURCE_PRIORITY = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
+const SOURCE_PRIORITY = ['willhaben', 'immoscout', 'bwsg', 'oevw', 'nebau', 'immo', 'wunderflats', 'derstandard', 'dibeo', 'findmyhome', 'sn'];
 const CROSS_SOURCE_THRESHOLD = 5;
 const SAME_SOURCE_THRESHOLD = 6;
 const TITLE_INFO_SATURATION = 15;
@@ -300,6 +300,7 @@ function buildGroup(members) {
       firstSeen: m.firstSeen,
       sourceUrl: m.sourceUrl ?? null,
       sourceHost: m.sourceHost ?? null,
+      sourceName: m.sourceName ?? null,
       agency: m.agency ?? null,
     })),
   };

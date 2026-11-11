@@ -2,8 +2,23 @@ import { CATEGORIES } from './categories.js';
 import { STATES } from './geo.js';
 
 export const PROPERTY_TYPES = ['apartment', 'house'];
-export const SOURCE_IDS = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
-export const NEW_SOURCES = ['cooperatives', 'justimmo', 'wunderflats', 'fify'];
+export const SOURCE_IDS = ['willhaben', 'immoscout', 'derstandard', 'dibeo', 'findmyhome', 'sn', 'wunderflats', 'immo', 'bwsg', 'oevw', 'nebau'];
+export const NEW_SOURCES = SOURCE_IDS.filter((s) => s !== 'willhaben' && s !== 'immoscout');
+export const LEGACY_GROUPS = {
+  ...Object.fromEntries(['justimmo', 'fify', 'immocontract', 'lebenswert', 'novelreal', 'wohnreich', 'immovent', 'realbrokers', 'edlauer'].map((s) => [s, ['immo']])),
+  cooperatives: ['bwsg', 'oevw', 'nebau'],
+};
+
+export const expandLegacySources = (sources) => [...new Set(sources.flatMap((s) => LEGACY_GROUPS[s] ?? [s]))];
+const PORTALS_V3 = ['willhaben', 'immoscout', 'cooperatives', 'justimmo', 'wunderflats', 'fify'];
+const ADDED_V4 = ['derstandard', 'dibeo', 'findmyhome', 'sn'];
+
+export function addV4Sources(prefs) {
+  const sources = prefs?.sources ?? [];
+  const expanded = expandLegacySources(sources);
+  if (!expandLegacySources(PORTALS_V3).every((s) => expanded.includes(s)) || ADDED_V4.some((s) => sources.includes(s))) return prefs;
+  return { ...prefs, sources: [...sources, ...ADDED_V4] };
+}
 const STATE_IDS = STATES.map((s) => s.id);
 const RANGES = [['minPrice', 'maxPrice'], ['minArea', 'maxArea'], ['minRooms', 'maxRooms']];
 export const SCRAPE_KEYS = ['states', 'types', 'sources', ...RANGES.flat()];
@@ -104,6 +119,7 @@ export function sanitizePrefs(input = {}) {
     return max && max < min ? { [minKey]: max, [maxKey]: min } : { [minKey]: min, [maxKey]: max };
   };
   let rawSources = list(input.sources);
+  if (rawSources) rawSources = expandLegacySources(rawSources);
   if (rawSources && rawSources.length > 0) {
     if (rawSources.includes('rentola') || (rawSources.includes('willhaben') && rawSources.includes('immoscout') && !NEW_SOURCES.some((s) => rawSources.includes(s)))) {
       rawSources = [...rawSources.filter((s) => s !== 'rentola'), ...NEW_SOURCES];

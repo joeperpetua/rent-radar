@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["-e", "const h=require('http'),f=require('fs'),p=require('path');const r=p.resolve('extension');const t={'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png'};h.createServer((q,s)=>{const u=decodeURIComponent(q.url.split('?')[0]);const x=p.join(r,u==='/'?'design/variants.html':u);if(!x.startsWith(r))return s.writeHead(403).end();f.readFile(x,(e,d)=>e?s.writeHead(404).end():s.writeHead(200,{'content-type':t[p.extname(x)]||'application/octet-stream','cache-control':'no-store'}).end(d))}).listen(5180)"],
       "port": 5180
+    },
+    {
+      "name": "landing",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "const h=require('http'),f=require('fs'),p=require('path');const r=p.resolve('extension/landing');const t={'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml'};h.createServer((q,s)=>{const u=decodeURIComponent(q.url.split('?')[0]);const x=p.join(r,u==='/'?'index.html':u);if(!x.startsWith(r))return s.writeHead(403).end();f.readFile(x,(e,d)=>e?s.writeHead(404).end():s.writeHead(200,{'content-type':t[p.extname(x)]||'application/octet-stream','cache-control':'no-store'}).end(d))}).listen(5181)"],
+      "port": 5181
     }
   ]
 }

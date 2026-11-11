@@ -20,6 +20,13 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*"],
+      "js": ["landing.js"],
+      "run_at": "document_start"
+    }
+  ],
   "permissions": [
     "unlimitedStorage"
   ],

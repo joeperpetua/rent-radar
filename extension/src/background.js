@@ -7,17 +7,29 @@ async function appTabs() {
 
 async function focusTab({ tabId, windowId }) {
   await chrome.tabs.update(tabId, { active: true });
-  await chrome.windows.update(windowId, { focused: true });
+  if (chrome.windows && windowId != null) await chrome.windows.update(windowId, { focused: true });
 }
 
-chrome.action.onClicked.addListener(async () => {
+async function openApp(fromTab) {
   const [existing] = await appTabs();
   if (existing) await focusTab(existing);
+  else if (fromTab) await chrome.tabs.update(fromTab.id, { url: APP_URL });
   else await chrome.tabs.create({ url: APP_URL });
+}
+
+chrome.action.onClicked.addListener(() => openApp());
+
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  if (reason === chrome.runtime.OnInstalledReason.INSTALL) openApp();
 });
 
-chrome.runtime.onMessage.addListener((message, sender) => {
-  if (message !== 'duplicate-app' || sender.id !== chrome.runtime.id || !sender.tab) return;
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id || !sender.tab) return;
+  if (message === 'open-app') {
+    openApp(sender.tab).then(() => sendResponse(true), () => sendResponse(false));
+    return true;
+  }
+  if (message !== 'duplicate-app') return;
   appTabs().then(async (tabs) => {
     const other = tabs.find((c) => c.tabId !== sender.tab.id);
     if (!other) return;

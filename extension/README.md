@@ -1,4 +1,4 @@
-# RentRadar Austria — Chrome extension (V3)
+# RentRadar Austria — browser extension (MV3, Chromium + Firefox)
 
 Scans Austrian rental portals, dedups listings and keeps saved searches. Everything runs in the browser, no server:
 
@@ -11,18 +11,43 @@ Scans Austrian rental portals, dedups listings and keeps saved searches. Everyth
 2. **Load unpacked** → pick `extension/src`.
 3. Click the toolbar icon. It opens the app tab, or focuses the tab if it's already open.
 
-Requires Chrome 116+ (`chrome.runtime.getContexts`). Translation and the AI location rating need Chrome 138+ (`Translator`, `LanguageModel`).
+Firefox: `npm run build:firefox`, then `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → pick `dist/firefox/manifest.json`.
+
+Requires Chrome 116+ or Firefox 128+ (`runtime.getContexts`, host permissions granted at install). Translation and the AI location rating need Chrome 138+ (`Translator`, `LanguageModel`); elsewhere they're hidden.
 
 ```bash
 npm install
 npm test
 ```
 
-Tests run the core against `fake-indexeddb`. The extension itself has no runtime dependencies and no build step.
+Tests run the core against `fake-indexeddb`. The extension has no runtime dependencies; `src/` loads as-is in Chromium.
 
-Fonts are Inter and Plus Jakarta Sans (OFL, see `src/app/fonts/`), bundled because the CSP blocks font CDNs. `npm run fonts` copies them from `@fontsource-variable`.
+## Build
 
-Icons are [Lucide](https://lucide.dev) (ISC, see `src/app/lucide-LICENSE.txt`). `npm run icons` regenerates `src/app/icons.js` and `src/app/favicon.svg` from `lucide-static`. Add a name to `scripts/icons.js` to use a new icon. The toolbar PNGs in `src/icons/` are renders of `favicon.svg`.
+```bash
+npm run build
+npm run build:chromium
+npm run build:firefox
+```
+
+`scripts/build.js` copies `src/` to `dist/<target>/`, writes the target's manifest and packs it as `dist/rentradar-<target>-<version>.zip` for store upload. The extension ships only through the stores; the landing page links to the listings and offers no downloads.
+
+- **chromium**: `src/manifest.json` unchanged (service worker background). Upload to the Chrome Web Store; Edge, Brave, Vivaldi, Kiwi, Quetta and Orion install from there.
+- **firefox**: `background.scripts` instead of `service_worker`, no `minimum_chrome_version`, plus `browser_specific_settings` (gecko id `rentradar-austria@joeperpetua`, min 128 on desktop and Android, `data_collection_permissions: none`). Upload to addons.mozilla.org; AMO signs it. `gecko_android` makes it listable for Firefox on Android.
+
+The store links live in `STORES` in `landing/guides.js`. They point to store searches for "RentRadar Austria" until the listings exist; swap in the listing URLs once published.
+
+## Landing page
+
+`landing/` is a static page (preview: `landing` in `.claude/launch.json`, port 5181). The content script `src/landing.js` runs only on origins listed under `content_scripts` in the manifest (localhost for now; add the production origin there). It sets `data-rentradar` on `<html>` at `document_start`, so the page knows on load whether the extension is installed. The match is `http://localhost/*` because Firefox ignores ports in match patterns; the script itself only acts on port 5181 for localhost.
+
+- First install: `runtime.onInstalled` (reason `install`) opens the app tab, so nobody has to come back and reload the landing page. Updates don't open anything.
+- Installed: the page posts `rentradar:open`; the background focuses an open app tab, or navigates the landing tab to the app. Coming back via the back button doesn't reopen it. An *Open RentRadar* button stays as fallback.
+- Not installed: install guides from `landing/guides.js`, picked by platform, each with a button to its store listing. Desktop: Chrome/Edge/Brave (Chrome Web Store) and Firefox (AMO). Android: Kiwi, Quetta, Vivaldi 8.2+ (Chrome Web Store) and Firefox 128+ (AMO). iOS: Orion (AMO, after turning on Firefox extension support). The guide for the current browser is preselected; a desktop browser that can't run it (Safari, old versions) gets a warning above the guides.
+- Extension reloaded or removed while the page was open: the content script answers `rentradar:stale` and the page asks for a reload.
+- Text is in `landing/i18n.js` (DE/EN, switch in the header, remembered in `localStorage`).
+- The sun/moon button in the header flips light/dark. It follows the system until clicked, then the choice is kept in `localStorage` and `landing/boot.js` applies it before first paint.
+- `landing/radar.js` runs the scan radar from the app as a fixed backdrop: right side on wide screens, faded behind the header below 1100px. Blips are placed at random and pop as the sweep passes them, three more per sweep up to 28.
 
 ## UI behaviour
 
@@ -58,15 +83,20 @@ Inspect or clear the data in DevTools on the app tab → Application → Indexed
 
 ```
 src/manifest.json   MV3 manifest, host permissions for willhaben, ImmoScout24 and https://*/*
-src/background.js   toolbar click → open/focus the app tab; closes duplicate app tabs
+src/background.js   toolbar click or landing page → open/focus the app tab; closes duplicate app tabs (no `windows` API on Android is fine)
+src/landing.js      content script on the landing page: install marker + open request
 src/core/           db.js (IndexedDB), api.js, scan.js, prefs, dedup, categories, geo, http, sources/*
 src/app/            UI + bridge.js
+landing/            static landing page, not part of the extension
+scripts/build.js    per-browser dist/ + store upload zips (zip.js is the zip writer)
+dist/               build output, gitignored
 ```
 
 - `bridge.js` opens the DB and exposes the `window.rentradar.call` / `onScanStatus` API to `app.js`.
 - Only one app tab runs at a time (Web Locks). A second one hands focus to the first and closes, so two scan queues never run at once.
 - Scans stop if the app tab is closed. Nothing scans in the background.
 - `http.js` doesn't set `User-Agent`, so the browser sends its own.
+- No contact data (phone, email) is parsed or stored. Contact goes through the linked original listing.
 
 ## Portal terms of use
 

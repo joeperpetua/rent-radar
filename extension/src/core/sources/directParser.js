@@ -8,6 +8,18 @@ import { dedupeImageUrls } from '../dedup.js';
  * (JustImmo brokers, Housing Cooperatives, Fify/Dynamo, Wunderflats, onOffice, EDI-Real, WordPress/independents).
  */
 
+export const PARSER_VERSION = 2;
+
+const NON_RESIDENTIAL_TYPE = /parken|garage|stellplatz|gewerbe|b[üu]ro|praxis|einzelhandel|gastgewerbe|gastronomie|grundst[üu]ck|land-? und forst|lager|halle|zinshaus|rendite|freizeit|sonstige|sonderobjekt/i;
+const NON_RESIDENTIAL_TITLE = /\b(?:tief)?garagen(?:stell)?pl[aä]tze?\b|\b(?:park|stell|abstell|kfz-?stell)pl[aä]tze?\b|\blagerfl[aä]che\b|\blagerraum\b|\bkellerabteil\b|\bgesch[aä]ftslokal\b|\bb[uü]rofl[aä]che\b|\bgewerbefl[aä]che\b/i;
+const RESIDENTIAL_TITLE = /wohnung|zimmer|haus|apartment|appartement|maisonette|penthouse|loft|garconniere|wohnen/i;
+
+export function isNonResidential(kv, title = '') {
+  const type = kv.objektart || kv.objekttyp || kv.immobilienart || '';
+  if (type) return NON_RESIDENTIAL_TYPE.test(type) && !/wohnung|haus|zimmer/i.test(type);
+  return NON_RESIDENTIAL_TITLE.test(title) && !RESIDENTIAL_TITLE.test(title);
+}
+
 const INACTIVE_PATTERNS = [
   /inactive_property_id/i,
   /search-object-not-found/i,
@@ -261,6 +273,10 @@ export function parseDirectListing(html, url = '', statusCode = 200) {
   if (isListingForSale(cleanHtml, url, kv)) {
     return { inactive: true, forSale: true };
   }
+  const pageTitle = decodeEntities(/<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] || '');
+  if (isNonResidential(kv, `${pageTitle} ${listing.name || ''}`)) {
+    return { inactive: true, forSale: false, nonResidential: true };
+  }
   const keys = Object.keys(kv);
 
   function matchFact(regexes) {
@@ -338,7 +354,7 @@ export function parseDirectListing(html, url = '', statusCode = 200) {
       /(?:Monthly rent|Rent)\s*[:\-]?\s*(?:€\s*)?([0-9.,]+)\s*(?:\/\s*month|per month)/i,
     ])),
   ];
-  const price = candidatePrices.find((p) => p != null) ?? null;
+  const price = candidatePrices.find((p) => p != null && p >= 50) ?? null;
   if (price != null && price > 30000) {
     return { inactive: true, forSale: true };
   }
@@ -398,7 +414,10 @@ export function parseDirectListing(html, url = '', statusCode = 200) {
       /(?:€\s*|EUR\s*)([0-9.,]+)\s*(?:Kaution|Finanzierungsbeitrag|Eigenmittel|Baukostenzuschuss)/i,
       /Security deposit[^\d]*€([0-9.,]+)/i,
     ]);
-  const deposit = toNumber(depositRaw);
+  const depositNumber = toNumber(depositRaw);
+  const depositInMonths = depositNumber != null && depositNumber <= 12
+    && (/monat/i.test(depositRaw ?? '') || /(?:Kaution|Finanzierungsbeitrag)\s*[:\-]?\s*\d{1,2}\s*(?:Brutto|Netto)?-?monats?/i.test(plainText));
+  const deposit = depositInMonths ? (price ? Math.round(depositNumber * price * 100) / 100 : null) : depositNumber;
 
   // --- Agency Name ---
   const agencyRaw = agent.name
@@ -423,7 +442,13 @@ export function parseDirectListing(html, url = '', statusCode = 200) {
   const htmlImages = [...strippedHtml.matchAll(/(?:href|src|data-src)="([^"]+?\.(?:jpg|jpeg|png|webp|avif)(?:\?[^"]*)?)"/gi)]
     .map((m) => m[1]);
 
-  const images = dedupeImageUrls([...ldImages, ...htmlImages], url).slice(0, 25);
+  const galleryImages = [...html.matchAll(/<img\b[^>]*\bclass="[^"]*\b(?:slider-photo|gallery-image|gallery-img)\b[^"]*"[^>]*>/gi)]
+    .map((m) => /\b(?:data-src|src)="\s*([^"\s]+)\s*"/i.exec(m[0])?.[1])
+    .filter(Boolean);
+
+  const uniqueLd = dedupeImageUrls(ldImages, url);
+  const curated = galleryImages.length ? [...ldImages, ...galleryImages] : uniqueLd.length >= 2 ? ldImages : [...ldImages, ...htmlImages];
+  const images = dedupeImageUrls(curated, url).slice(0, 25);
 
   // --- Description ---
   const description = listing.description || null;

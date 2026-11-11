@@ -382,3 +382,35 @@ test('parseDirectListing parses ÖVW apartment with "Miete brutto" correctly wit
   assert.equal(result.rooms, 1);
   assert.equal(result.deposit, 13328.1);
 });
+
+const justimmoPage = ({ objektart, title, kaution = '3.000,00 €' }) => `<html><head><title>${title}</title>
+<script type="application/ld+json">{"@type":"RealEstateListing","name":"${title}","image":["https://storage.justimmo.at/thumb/a1/fc_h640_mwebp_w640/photo1.jpg","https://storage.justimmo.at/thumb/a2/fc_h1080_mwebp_w1920/photo1.jpg"]}</script></head><body>
+<div class="item-image image-1" style="background-image: url('https://storage.justimmo.at/thumb/h/fcc_mwebp_w767/header.png');"></div>
+<img src="https://storage.justimmo.at/file/broker-logo.png">
+<div class="carousel photo-gallery"><img class="slider-photo contain" alt="Bild 1" src="https://storage.justimmo.at/thumb/b1/fc_h1080_mwebp_w1920/photo1.jpg" /><img class="slider-photo contain" alt="Bild 2" src="https://storage.justimmo.at/thumb/b2/fc_h1080_mwebp_w1920/photo2.jpg" /></div>
+<img src="https://storage.justimmo.at/thumb/c1/fcc_h50_mwebp/photo2.jpg">
+<img src="https://files.justimmo.at/public/pic/user_small/agent.jpg">
+<img src="https://storage.justimmo.at/thumb/s/fc_h20_mwebp_w20/facebook.png">
+<ul><li><span class="list-item-desc">Objektart</span><span class="list-item-value">${objektart}</span></li>
+<li><span class="list-item-desc">Gesamtmiete</span><span class="list-item-value">1.000,00 €</span></li>
+<li><span class="list-item-desc">Kaution</span><span class="list-item-value">${kaution}</span></li></ul></body></html>`;
+
+test('parseDirectListing keeps only JustImmo gallery photos, one per photo', () => {
+  const result = parseDirectListing(justimmoPage({ objektart: 'Wohnung', title: '2-Zimmer Wohnung' }), 'https://www.novel-real.at/de/objekt/1');
+  assert.equal(result.inactive, false);
+  assert.deepEqual(result.images.map((i) => i.split('/').pop()), ['photo1.jpg', 'photo2.jpg']);
+  assert.ok(result.images[0].includes('fc_h1080'));
+});
+
+test('parseDirectListing rejects non-residential JustImmo objects', () => {
+  for (const [objektart, title] of [['Industrie / Gewerbe', 'Attraktive Lagerfläche im 1. KG in 1050 Wien'], ['Parken', 'Klugargasse 14 - Parkplatz im Freien']]) {
+    const result = parseDirectListing(justimmoPage({ objektart, title }), 'https://www.novel-real.at/de/objekt/2');
+    assert.equal(result.inactive, true);
+    assert.equal(result.nonResidential, true);
+  }
+});
+
+test('parseDirectListing converts deposit given in monthly rents', () => {
+  const result = parseDirectListing(justimmoPage({ objektart: 'Wohnung', title: 'Wohnung', kaution: '3 Bruttomonatsmieten' }), 'https://www.novel-real.at/de/objekt/3');
+  assert.equal(result.deposit, 3000);
+});

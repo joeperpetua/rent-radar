@@ -49,6 +49,7 @@ export function streetOf(address) {
 export function normalizeImageKey(rawUrl) {
   try {
     const u = new URL(rawUrl);
+    if (/(?:^|\.)justimmo\.at$/i.test(u.hostname)) return `justimmo/${u.pathname.split('/').pop()}`.toLowerCase();
     let pathname = u.pathname;
     pathname = pathname.replace(/\/(?:large|small|medium|thumb|thumbs|thumbnail|mini|preview|\d+x\d+|fc_h\d+(?:_w\d+)?)\//gi, '/');
     pathname = pathname.replace(/[-_](?:hd|2xl|xl|lg|md|sm|xs|org|large|medium|small|thumb|thumbnail|preview|\d+x\d+)\.(webp|jpg|jpeg|png|avif)$/i, '.$1');
@@ -98,7 +99,10 @@ export function dedupeImageUrls(urls, baseUrl = '') {
       lower.includes('badge') ||
       lower.includes('/person/') ||
       lower.includes('/user/') ||
-      lower.includes('placeholder')
+      lower.includes('placeholder') ||
+      lower.includes('/public/pic/user') ||
+      /storage\.justimmo\.at\/file\/[^/]+\.png$/.test(lower) ||
+      Number(/justimmo\.at\/thumb\/[^/]+\/[^/]*?_h(\d+)[_/]/.exec(lower)?.[1] ?? 1000) < 200
     ) {
       continue;
     }

@@ -411,23 +411,6 @@ export function parseDirectListing(html, url = '', statusCode = 200) {
   let agency = agencyRaw ? agencyRaw.replace(/\s+/g, ' ').replace(/\s+(?:Tel|Mobil|E-Mail|Mail|Telefon)$/i, '').slice(0, 70).trim() : null;
   if (agency && /^(erklärt|anfrage|kontakt|impressum)$/i.test(agency)) agency = null;
 
-  // --- Phone ---
-  const phoneRaw = agent.telephone
-    || agent.contactPoint?.[0]?.telephone
-    || matchFact([
-      /(?:Tel(?:efon)?\.?|Mobil(?:telefon)?|Hotline)\s*[:\-]?\s*(\+?[0-9 /()\-]{8,})/i,
-      /(\+43[0-9 /()\-]{7,})/,
-    ]);
-  const agencyPhone = phoneRaw ? phoneRaw.replace(/\s+/g, ' ').trim() : null;
-
-  // --- Email ---
-  const emailRaw = agent.email
-    || agent.contactPoint?.[0]?.email
-    || matchFact([
-      /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/,
-    ]);
-  const agencyEmail = emailRaw ? emailRaw.trim().toLowerCase() : null;
-
   // --- Images ---
   const ldImages = [].concat(listing.image || [], listing.photo || [])
     .map((i) => (typeof i === 'string' ? i : i?.url || i?.contentUrl))
@@ -456,8 +439,6 @@ export function parseDirectListing(html, url = '', statusCode = 200) {
     lat: lat != null && !Number.isNaN(lat) ? lat : null,
     lng: lng != null && !Number.isNaN(lng) ? lng : null,
     agency,
-    agencyPhone,
-    agencyEmail,
     images,
     description,
   };

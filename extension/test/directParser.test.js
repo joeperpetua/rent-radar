@@ -173,8 +173,6 @@ test('parseDirectListing parses JustImmo broker page accurately', () => {
   assert.equal(result.price, 916.33);
   assert.equal(result.deposit, 2750);
   assert.equal(result.agency, 'IMMOcontract Immobilien Vermittlung GmbH');
-  assert.equal(result.agencyPhone, '+43 1 8900800');
-  assert.equal(result.agencyEmail, 'office@immocontract.at');
   assert.ok(result.images.includes('https://storage.justimmo.at/thumb/abc/fc_h640/img1.jpg'));
 });
 
@@ -186,8 +184,6 @@ test('parseDirectListing parses Fify/Dynamo broker page with dl and broker text'
   assert.equal(result.price, 2853.25);
   assert.equal(result.deposit, 8600);
   assert.equal(result.agency, 'Gregor LAMP');
-  assert.equal(result.agencyPhone, '+43/660/507 90 96');
-  assert.equal(result.agencyEmail, 'g.lamp@edlauer.com');
   assert.ok(result.images.some((i) => i.includes('fify-dynamo-assets')));
 });
 
@@ -199,8 +195,6 @@ test('parseDirectListing parses Housing Cooperative with equity contribution', (
   assert.equal(result.price, 645.8);
   assert.equal(result.deposit, 14200);
   assert.equal(result.agency, 'WAG Wohnungsanlagen Ges.m.b.H.');
-  assert.equal(result.agencyPhone, '+43 50338 0');
-  assert.equal(result.agencyEmail, 'office@wag.at');
 });
 
 test('parseDirectListing parses Wunderflats apartment schema and monthly rent', () => {

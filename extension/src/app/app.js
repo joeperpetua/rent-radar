@@ -881,8 +881,6 @@ function renderDetail(id) {
     g.floor && ['fact.floor', g.floor],
     ['fact.advertiser', advertiser],
     g.deposit && ['fact.deposit', euro(g.deposit, 2)],
-    g.agencyPhone && ['fact.phone', g.agencyPhone],
-    g.agencyEmail && ['fact.email', g.agencyEmail],
     ['fact.published', fmtDate(g.publishedAt)],
     ['fact.firstSeen', fmtDate(g.firstSeen)],
   ].filter(Boolean);

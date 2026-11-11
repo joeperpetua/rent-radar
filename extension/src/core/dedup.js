@@ -281,8 +281,6 @@ function buildGroup(members) {
     firstSeen: dates('firstSeen')[0] ?? null,
     isPrivate: first('isPrivate'),
     agency: first('agency'),
-    agencyPhone: first('agencyPhone'),
-    agencyEmail: first('agencyEmail'),
     deposit: first('deposit'),
     floor: first('floor'),
     extras: [...new Set(members.flatMap((m) => m.extras ?? []))],
@@ -299,8 +297,6 @@ function buildGroup(members) {
       sourceUrl: m.sourceUrl ?? null,
       sourceHost: m.sourceHost ?? null,
       agency: m.agency ?? null,
-      agencyPhone: m.agencyPhone ?? null,
-      agencyEmail: m.agencyEmail ?? null,
     })),
   };
 }

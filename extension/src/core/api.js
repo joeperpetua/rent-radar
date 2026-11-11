@@ -114,8 +114,6 @@ export const handlers = {
       if (details.rooms != null) patch.rooms = details.rooms;
       if (details.deposit != null) patch.deposit = details.deposit;
       if (details.agency) patch.agency = details.agency;
-      if (details.agencyPhone) patch.agencyPhone = details.agencyPhone;
-      if (details.agencyEmail) patch.agencyEmail = details.agencyEmail;
       if (details.images?.length) patch.images = details.images;
       if (details.directVerified) patch.directVerified = true;
       await updateListingData(id, patch);

@@ -58,8 +58,6 @@ export function parseListings(html) {
             publishedAt: item.availableFrom || null,
             isPrivate: false,
             agency: 'Wunderflats',
-            agencyPhone: '+49 30 120 86 22 0',
-            agencyEmail: 'service@wunderflats.com',
             deposit: price,
             floor: item.floor != null ? String(item.floor) : null,
             extras: item.amenities?.elevator ? ['Aufzug'] : [],

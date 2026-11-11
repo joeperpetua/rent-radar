@@ -72,8 +72,6 @@ function normalize(entry, type, region) {
     publishedAt: offer.validFrom ?? null,
     isPrivate: null,
     agency: null,
-    agencyPhone: null,
-    agencyEmail: null,
     deposit: null,
     floor: null,
     extras: [],
@@ -231,8 +229,6 @@ export async function fetchDetails(url) {
       if (direct.price != null) details.price = direct.price;
       if (direct.deposit != null) details.deposit = direct.deposit;
       if (direct.agency) details.agency = direct.agency;
-      if (direct.agencyPhone) details.agencyPhone = direct.agencyPhone;
-      if (direct.agencyEmail) details.agencyEmail = direct.agencyEmail;
       if (direct.images?.length) details.images = direct.images;
       if (direct.description) details.description = direct.description;
       details.directVerified = true;
@@ -255,8 +251,6 @@ export async function addDetails(listings, stored) {
         rooms: known.rooms ?? listing.rooms,
         deposit: known.deposit ?? null,
         agency: known.agency ?? null,
-        agencyPhone: known.agencyPhone ?? null,
-        agencyEmail: known.agencyEmail ?? null,
         images: known.images ?? [],
         description: known.description ?? null,
         sourceUrl: known.sourceUrl,
@@ -296,8 +290,6 @@ export async function addDetails(listings, stored) {
         if (details.price != null) listing.price = details.price;
         if (details.deposit != null) listing.deposit = details.deposit;
         if (details.agency) listing.agency = details.agency;
-        if (details.agencyPhone) listing.agencyPhone = details.agencyPhone;
-        if (details.agencyEmail) listing.agencyEmail = details.agencyEmail;
         if (details.directVerified) listing.directVerified = true;
         listing.detailsAt = new Date().toISOString();
       } catch {

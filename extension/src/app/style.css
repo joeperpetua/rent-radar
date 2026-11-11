@@ -1216,19 +1216,25 @@ body.lightbox-open { overflow: hidden; }
 .thumbs button { animation: fade-in .3s ease backwards; }
 
 .radar {
+  container-type: inline-size;
+  padding: 12px 20px 16px;
+  animation: fade-in .4s ease;
+}
+
+.radar-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
-  padding: 32px 20px 64px;
-  animation: fade-in .4s ease;
+  justify-content: center;
+  gap: 16px;
 }
 
 .radar-scope {
   --radar: var(--accent);
   position: relative;
   aspect-ratio: 1;
-  width: min(300px, 100%);
+  flex: none;
+  width: min(clamp(80px, 14vh, 220px), 100%);
   border-radius: 50%;
   overflow: hidden;
   background: radial-gradient(circle, color-mix(in srgb, var(--radar) 10%, var(--surface)) 0%, var(--surface) 70%);
@@ -1322,22 +1328,22 @@ body.lightbox-open { overflow: hidden; }
 .radar.queued .radar-sweep { animation-duration: 9s; opacity: .5; }
 .radar.queued .radar-core::before, .radar.queued .radar-core::after { animation: none; opacity: 0; }
 
-.radar-info { display: flex; flex-direction: column; gap: 6px; width: min(460px, 100%); min-width: 0; text-align: center; animation: rise .5s var(--ease-out) .1s backwards; }
+.radar-info { display: flex; flex-direction: column; gap: 6px; width: min(640px, 100%); min-width: 0; text-align: center; animation: rise .5s var(--ease-out) .1s backwards; }
 .radar-sources { text-align: left; }
 .radar-title { margin: 0; font-size: 22px; letter-spacing: -.015em; overflow-wrap: anywhere; }
-.radar-sub { margin: 0 0 14px; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
-.radar-hint { margin: 14px 0 0; color: var(--muted); font-size: 13px; }
+.radar-sub { margin: 0 0 10px; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.radar-hint { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
 
-.radar-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.radar-sources { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
 
 .radar-sources li {
   display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  grid-template-areas: "state dot name count" "bar bar bar bar";
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "state dot name count" "state bar bar bar";
   align-items: center;
-  gap: 8px 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  gap: 5px 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
@@ -1347,11 +1353,11 @@ body.lightbox-open { overflow: hidden; }
 
 .radar-sources li:nth-child(2) { animation-delay: .06s; }
 .radar-sources li:nth-child(3) { animation-delay: .12s; }
-.radar-state { grid-area: state; display: grid; place-items: center; font-size: 18px; color: var(--muted); }
+.radar-state { grid-area: state; display: grid; place-items: center; font-size: 16px; color: var(--muted); }
 .radar-sources .dot { grid-area: dot; }
-.radar-sources strong { grid-area: name; font-size: 14px; }
-.radar-count { grid-area: count; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.radar-bar { grid-area: bar; position: relative; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.radar-sources strong { grid-area: name; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.radar-count { grid-area: count; font-size: 12px; white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.radar-bar { grid-area: bar; position: relative; height: 3px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
 .radar-bar i { position: absolute; inset: 0; border-radius: 2px; background: var(--src); transform-origin: left; transform: scaleX(0); transition: transform .5s var(--ease-out); }
 .radar-sources li[data-source="willhaben"] { --src: var(--src-willhaben); }
 .radar-sources li[data-source="immoscout"] { --src: var(--src-immoscout); }
@@ -1374,9 +1380,23 @@ body.lightbox-open { overflow: hidden; }
 .radar-sources li[data-state="error"] .radar-state, .radar-sources li[data-state="error"] .radar-count { color: var(--warn); }
 .radar-sources li[data-state="error"] .radar-bar i { transform: scaleX(1); background: var(--warn); opacity: .5; }
 
+@container (min-width: 760px) {
+  .radar-body { flex-direction: row; gap: 48px; }
+  .radar-scope { width: clamp(160px, 30vh, 300px); }
+  .radar-info { text-align: left; }
+}
+
 @media (max-width: 760px) {
-  .radar { padding: 16px 0 48px; }
-  .radar-scope { width: min(240px, 100%); }
+  .radar { padding: 8px 0 16px; }
+}
+
+@container (max-width: 520px) {
+  .radar-body { gap: 14px; }
+  .radar-title { font-size: 19px; }
+  .radar-sources { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .radar-sources li { position: relative; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "state name" "state count"; gap: 0 8px; padding: 6px 10px 9px; }
+  .radar-sources .dot { display: none; }
+  .radar-bar { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px; }
 }
 
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: var(--ease-out); }

@@ -702,17 +702,19 @@ function renderRadar(search) {
   if (box.dataset.search !== String(search.id)) {
     box.dataset.search = search.id;
     box.innerHTML = `
-      <div class="radar-scope" aria-hidden="true">
-        <div class="radar-grid"></div>
-        <div class="radar-sweep"></div>
-        <div class="radar-blips"></div>
-        <div class="radar-core">${icon('house')}</div>
-      </div>
-      <div class="radar-info">
-        <h2 class="radar-title"></h2>
-        <p class="radar-sub"></p>
-        <ul class="radar-sources"></ul>
-        <p class="radar-hint"></p>
+      <div class="radar-body">
+        <div class="radar-scope" aria-hidden="true">
+          <div class="radar-grid"></div>
+          <div class="radar-sweep"></div>
+          <div class="radar-blips"></div>
+          <div class="radar-core">${icon('house')}</div>
+        </div>
+        <div class="radar-info">
+          <h2 class="radar-title"></h2>
+          <p class="radar-sub"></p>
+          <ul class="radar-sources"></ul>
+          <p class="radar-hint"></p>
+        </div>
       </div>`;
   }
   const scanning = isScanning(search.id);

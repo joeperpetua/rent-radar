@@ -9,7 +9,7 @@ const SOURCE_KINDS = ['portal', 'broker', 'cooperative'];
 const sourceLabel = (s) => s.sourceName || SOURCE_LABELS[s.source] || s.sourceHost || s.source;
 const RANGE_FIELDS = ['minPrice', 'maxPrice', 'minArea', 'maxArea', 'minRooms', 'maxRooms'];
 const VIEW_DEFAULTS = { sort: 'new', onlyNew: false, onlyMulti: false, onlyDropped: false, q: '' };
-const TOAST_LINGER_MS = 5000;
+const TOAST_LINGER_MS = 2500;
 const ERROR_TOAST_LINGER_MS = 20000;
 const VIEW_SAVE_DELAY_MS = 400;
 const CLOCK_TICK_MS = 60 * 1000;

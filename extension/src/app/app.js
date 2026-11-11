@@ -1182,6 +1182,22 @@ function bindSwipeBack(frame) {
   frame.addEventListener('touchcancel', end);
 }
 
+function preloadImage(url) {
+  const pre = new Image();
+  pre.referrerPolicy = 'no-referrer';
+  pre.src = url;
+  return pre;
+}
+
+async function swapImage(img, url, frames, options) {
+  img.dataset.pending = url;
+  await preloadImage(url).decode().catch(() => {});
+  if (img.dataset.pending !== url) return;
+  delete img.dataset.pending;
+  img.src = url;
+  if (frames && !reduceMotion()) img.animate(frames, options);
+}
+
 function bindGallery(el, g) {
   const main = $('.gallery-main img', el);
   if (!main) return;
@@ -1191,8 +1207,8 @@ function bindGallery(el, g) {
   const show = (i) => {
     const idx = (i + g.images.length) % g.images.length;
     const dir = Math.sign(i - Number(main.dataset.index));
-    main.src = g.images[idx];
-    if (dir && !reduceMotion()) main.animate([{ opacity: 0.2, transform: `translateX(${dir * 24}px)` }, {}], { duration: 260, easing: EASE_OUT });
+    swapImage(main, g.images[idx], dir && [{ opacity: 0.2, transform: `translateX(${dir * 24}px)` }, {}], { duration: 260, easing: EASE_OUT });
+    preloadImage(g.images[(idx + (dir || 1) + g.images.length) % g.images.length]);
     main.dataset.index = idx;
     $('.gallery-count', el).textContent = `${idx + 1} / ${g.images.length}`;
     el.querySelectorAll('.thumbs button').forEach((b, j) => b.setAttribute('aria-current', String(j === idx)));
@@ -1262,11 +1278,15 @@ function showLightboxImage(index, dir = 0) {
   const box = $('#lightbox');
   const img = $('img', box);
   img.style.visibility = '';
-  img.src = images[i];
+  if (dir) {
+    swapImage(img, images[i], [{ opacity: 0, transform: `translateX(${dir * 60}px) scale(.98)` }, {}], { duration: 300, easing: EASE_OUT });
+  } else {
+    delete img.dataset.pending;
+    img.src = images[i];
+  }
   $('.lb-count', box).textContent = `${i + 1} / ${images.length}`;
   box.classList.toggle('single', images.length < 2);
-  for (const n of [i + 1, i - 1]) new Image().src = images[(n + images.length) % images.length];
-  if (dir && !reduceMotion()) img.animate([{ opacity: 0, transform: `translateX(${dir * 60}px) scale(.98)` }, {}], { duration: 300, easing: EASE_OUT });
+  for (const n of [i + 1, i - 1]) preloadImage(images[(n + images.length) % images.length]);
 }
 
 const stepLightbox = (step) => showLightboxImage(state.lightbox.index + step, step);
@@ -1818,8 +1838,8 @@ function bindEvents() {
     const step = btn.dataset.action === 'img-next' ? 1 : -1;
     const index = (Number(img.dataset.index ?? 0) + step + g.images.length) % g.images.length;
     img.dataset.index = index;
-    img.src = g.images[index];
-    if (!reduceMotion()) img.animate([{ opacity: 0.3, transform: `translateX(${step * 16}px)` }, {}], { duration: 240, easing: EASE_OUT });
+    swapImage(img, g.images[index], [{ opacity: 0.3, transform: `translateX(${step * 16}px)` }, {}], { duration: 240, easing: EASE_OUT });
+    preloadImage(g.images[(index + step + g.images.length) % g.images.length]);
     $('[data-photo-counter]', card).textContent = `${index + 1} / ${g.images.length}`;
   };
 

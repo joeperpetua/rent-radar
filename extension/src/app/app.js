@@ -1223,7 +1223,9 @@ async function openLightbox(images, index = 0, source = null) {
   const box = $('#lightbox');
   const img = $('img', box);
   box.getAnimations({ subtree: true }).forEach((a) => a.cancel());
-  state.lightbox = { images, index, source, startIndex: index };
+  const pushed = !state.lightbox?.pushed && history.state?.lightbox !== true;
+  if (pushed) history.pushState({ lightbox: true }, '');
+  state.lightbox = { images, index, source, startIndex: index, pushed: pushed || Boolean(state.lightbox?.pushed) };
   box.hidden = false;
   document.body.classList.add('lightbox-open');
   showLightboxImage(index);
@@ -1256,9 +1258,13 @@ function showLightboxImage(index, dir = 0) {
 
 const stepLightbox = (step) => showLightboxImage(state.lightbox.index + step, step);
 
-function closeLightbox() {
+function closeLightbox({ fromHistory = false } = {}) {
   const lb = state.lightbox;
   if (!lb || lb.closing) return;
+  if (lb.pushed) {
+    lb.pushed = false;
+    if (!fromHistory && history.state?.lightbox) history.back();
+  }
   const box = $('#lightbox');
   const img = $('img', box);
   const finish = () => {
@@ -1821,6 +1827,13 @@ function bindEvents() {
   });
 
   window.addEventListener('hashchange', navigate);
+  window.addEventListener('popstate', () => {
+    if (history.state?.lightbox) {
+      if (!state.lightbox) history.back();
+      return;
+    }
+    if (state.lightbox) closeLightbox({ fromHistory: true });
+  });
   $('#back').addEventListener('click', (e) => {
     e.preventDefault();
     goBack();

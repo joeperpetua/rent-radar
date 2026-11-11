@@ -7,7 +7,7 @@ import * as fify from './sources/fify.js';
 import { dedupe } from './dedup.js';
 import { CATEGORIES, groupCategories, passesCategories } from './categories.js';
 import { effectivePrefs, isScannable, scrapeScope } from './prefs.js';
-import { dataVersion, getChangedPriceHistories, getRuns, getSearch, getStoredListings, initialScanAt, queryListings, queryRemovedListings, saveScan } from './db.js';
+import { dataVersion, getChangedPriceHistories, getRuns, getSearch, getStoredListings, initialScanAt, queryListings, queryRemovedListings, saveScan, saveSourceResult } from './db.js';
 
 export const SOURCES = { willhaben, immoscout, cooperatives, justimmo, wunderflats, fify };
 
@@ -50,9 +50,16 @@ export async function runScan(search, log = console.log) {
         stored: await getStoredListings(key),
       });
       const { listings, partial = false } = Array.isArray(result) ? { listings: result } : result;
-      Object.assign(entry, { state: 'done', count: listings.length, ms: Date.now() - started });
-      log(`[scan] #${search.id} ${key}: ${listings.length} listings in ${entry.ms}ms${partial ? ' (partial)' : ''}`);
-      return { key, listings, partial, ms: entry.ms };
+      const ms = Date.now() - started;
+      const done = { key, listings, partial, ms, written: false };
+      try {
+        done.written = await saveSourceResult({ searchId: search.id, startedAt: progress.startedAt, result: done });
+      } catch (err) {
+        log(`[scan] #${search.id} ${key} save deferred: ${err.message}`);
+      }
+      Object.assign(entry, { state: 'done', count: listings.length, ms, saved: done.written });
+      log(`[scan] #${search.id} ${key}: ${listings.length} listings in ${ms}ms${partial ? ' (partial)' : ''}`);
+      return done;
     } catch (error) {
       Object.assign(entry, { state: 'error', error: error.message, ms: Date.now() - started });
       log(`[scan] #${search.id} ${key} failed: ${error.message}`);

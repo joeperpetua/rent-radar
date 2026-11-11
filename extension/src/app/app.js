@@ -1422,7 +1422,28 @@ function renderAll() {
   else renderList();
 }
 
+let listingsLoad = null;
+let listingsReloadPending = false;
+
 async function loadListings() {
+  if (listingsLoad) {
+    listingsReloadPending = true;
+    return listingsLoad;
+  }
+  listingsLoad = (async () => {
+    try {
+      do {
+        listingsReloadPending = false;
+        await fetchListings();
+      } while (listingsReloadPending);
+    } finally {
+      listingsLoad = null;
+    }
+  })();
+  return listingsLoad;
+}
+
+async function fetchListings() {
   const id = state.activeId;
   const data = await api('listings', { id });
   if (id !== state.activeId) return;
@@ -1455,6 +1476,12 @@ async function selectSearch(id) {
   await loadListings();
 }
 
+function sourceLanded(prev, next) {
+  if (!next?.sources) return false;
+  const same = prev?.searchId === next.searchId && prev?.startedAt === next.startedAt;
+  return Object.entries(next.sources).some(([key, s]) => s.saved && !(same && prev.sources?.[key]?.saved));
+}
+
 async function onScanStatus(status) {
   const prev = state.status;
   state.status = status;
@@ -1463,7 +1490,7 @@ async function onScanStatus(status) {
   renderToasts();
   if (finished || queueChanged) await refreshSearches();
   renderStatus();
-  const reload = finished && status.progress.searchId === state.activeId;
+  const reload = status.progress?.searchId === state.activeId && (finished || sourceLanded(prev?.progress, status.progress));
   if (!detailId() && !reload) renderList();
   if (favoritesRoute()) {
     if (finished) loadFavorites();

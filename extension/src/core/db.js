@@ -215,19 +215,33 @@ function purgeRemoved(t, cutoff) {
   });
 }
 
+async function writeSourceResult(t, searchId, startedAt, { key, listings, partial = false, error }) {
+  if (error) return;
+  for (const listing of listings) await writeListing(t, searchId, listing, startedAt);
+  if (!partial) await markRemoved(t, searchId, key, startedAt);
+}
+
+const runSummary = ({ listings, partial = false, error, ms }) => (error
+  ? { ok: false, partial: false, error, count: null, ms: ms ?? null }
+  : { ok: true, partial, error: null, count: listings?.length ?? 0, ms: ms ?? null });
+
+export function saveSourceResult({ searchId, startedAt, result }) {
+  return write([LISTINGS, MEMBERS, SEARCHES, META], async (t) => {
+    if (!(await req(t.objectStore(SEARCHES).get(searchId))) || result.error) return false;
+    await writeSourceResult(t, searchId, startedAt, result);
+    await bumpVersion(t);
+    return true;
+  });
+}
+
 export function saveScan({ searchId, startedAt, results, scope }) {
   return write([LISTINGS, MEMBERS, SCANS, SEARCHES, META], async (t) => {
     const search = await req(t.objectStore(SEARCHES).get(searchId));
     if (!search) return null;
     const sources = {};
-    for (const { key, listings, partial = false, error, ms } of results) {
-      if (error) {
-        sources[key] = { ok: false, partial: false, error, count: null, ms: ms ?? null };
-        continue;
-      }
-      for (const listing of listings) await writeListing(t, searchId, listing, startedAt);
-      if (!partial) await markRemoved(t, searchId, key, startedAt);
-      sources[key] = { ok: true, partial, error: null, count: listings.length, ms: ms ?? null };
+    for (const result of results) {
+      if (!result.written) await writeSourceResult(t, searchId, startedAt, result);
+      sources[result.key] = runSummary(result);
     }
     const cutoff = new Date(Date.parse(startedAt) - REMOVED_RETENTION_DAYS * 86400000).toISOString();
     await purgeRemoved(t, cutoff);

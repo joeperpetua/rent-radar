@@ -268,6 +268,13 @@ export const queryListings = (searchId, prefs) => read([MEMBERS, LISTINGS], asyn
     .map(({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen }));
 });
 
+export const queryRemovedListings = (searchId, prefs) => read([MEMBERS, LISTINGS], async (t) => {
+  const rows = await memberListings(t, searchId, (m) => m.removedAt);
+  return rows
+    .filter(({ l }) => prefs.sources.includes(l.source) && prefs.types.includes(l.type) && !l.data?.forSale)
+    .map(({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen, removed: true }));
+});
+
 const scansOf = (searchId) => read(SCANS, async (t) => {
   const scans = await req(t.objectStore(SCANS).index('searchId').getAll(searchId));
   return scans.sort((a, b) => a.startedAt.localeCompare(b.startedAt));

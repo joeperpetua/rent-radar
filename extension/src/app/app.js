@@ -479,7 +479,7 @@ function filteredGroups() {
     return true;
   });
   const by = {
-    'new': (a, b) => (b.firstSeen ?? '').localeCompare(a.firstSeen ?? '') || (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
+    'new': (a, b) => (b.listedAt ?? '').localeCompare(a.listedAt ?? '') || (b.firstSeen ?? '').localeCompare(a.firstSeen ?? ''),
     'price-asc': (a, b) => (a.price ?? Infinity) - (b.price ?? Infinity),
     'price-desc': (a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity),
     'sqm-asc': (a, b) => (a.pricePerSqm ?? Infinity) - (b.pricePerSqm ?? Infinity),

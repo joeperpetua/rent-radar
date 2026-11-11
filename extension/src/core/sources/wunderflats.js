@@ -55,7 +55,7 @@ export function parseListings(html) {
             description: null,
             sourceUrl: url,
             sourceHost: 'wunderflats.com',
-            publishedAt: item.availableFrom || null,
+            publishedAt: null,
             isPrivate: false,
             agency: 'Wunderflats',
             deposit: price,

@@ -641,7 +641,8 @@ function patchGrid(groups, { flip = false } = {}) {
 function radarSearch() {
   const search = activeSearch();
   if (!search || !(isScanning(search.id) || isQueued(search.id))) return null;
-  if (state.data?.searchId !== search.id) return search.lastScanAt ? null : search;
+  if (!search.lastScanAt) return search;
+  if (state.data?.searchId !== search.id) return null;
   return state.data.groups.length ? null : search;
 }
 
@@ -1523,7 +1524,8 @@ async function onScanStatus(status) {
   renderToasts();
   if (finished || queueChanged) await refreshSearches();
   renderStatus();
-  const reload = status.progress?.searchId === state.activeId && (finished || sourceLanded(prev?.progress, status.progress));
+  const progressive = Boolean(activeSearch()?.lastScanAt) && sourceLanded(prev?.progress, status.progress);
+  const reload = status.progress?.searchId === state.activeId && (finished || progressive);
   if (!detailId() && !reload) renderList();
   if (favoritesRoute()) {
     if (finished) loadFavorites();

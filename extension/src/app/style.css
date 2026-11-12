@@ -240,6 +240,7 @@ input[type="text"] {
 .btn.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn.btn-danger:hover { border-color: var(--danger); filter: brightness(1.08); }
 .btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+#save-search:disabled { opacity: 1; background: var(--surface-2); border-color: var(--border); color: var(--muted); }
 
 .search-list li { position: relative; }
 .search-item { padding-right: 76px; }
@@ -1511,6 +1512,7 @@ body.lightbox-open { overflow: hidden; }
 [data-style="styled"] .btn { border-color: transparent; background: var(--surface-2); font-weight: 700; }
 [data-style="styled"] .btn:hover { border-color: transparent; background: color-mix(in srgb, var(--surface-2) 60%, var(--border)); }
 [data-style="styled"] .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--accent-2) 70%, transparent); }
+[data-style="styled"] #save-search:disabled { background: var(--surface-2); color: var(--muted); box-shadow: none; }
 [data-style="styled"] .btn-primary:hover { background: linear-gradient(135deg, var(--accent), var(--accent-2)); filter: brightness(1.06); }
 [data-style="styled"] .btn.btn-danger { background: var(--danger); color: #fff; }
 [data-style="styled"] .search-trigger:has(+ .search-menu:popover-open), [data-style="styled"] .settings-trigger:has(+ .settings-menu:popover-open) { background: var(--accent-soft); color: var(--accent); }

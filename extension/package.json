@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "RentRadar Austria Chrome extension: saved searches scanned in the browser, stored in IndexedDB",
+  "license": "MIT",
   "scripts": {
     "test": "node --test",
     "icons": "node scripts/icons.js",

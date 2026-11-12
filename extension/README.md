@@ -129,3 +129,7 @@ Checked 2026-11-05. ImmoScout24, willhaben and Rentola all forbid automated acce
 | Rentola ([Terms](https://rentola.at/en/terms-and-conditions) §3) | bots, scrapers, crawlers or other automated means without prior written permission | infringing third-party IP; rights in listing content stay with the rights holders (§6). UK law. |
 
 Private use is still a breach of contract, but low-risk at its current volume.
+
+## License
+
+MIT, see `../LICENSE`. Bundled third-party work is listed in `../THIRD-PARTY-NOTICES.md`; the license texts ship inside the package, at `app/lucide-LICENSE.txt` and `app/fonts/*-LICENSE.txt`. On AMO, pick MIT as the source-code license to match.

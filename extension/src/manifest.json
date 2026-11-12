@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RentRadar Austria",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "description": "Every Austrian rental portal in one search. Duplicates merged, price drops tracked, all data kept private in your browser.",
   "minimum_chrome_version": "116",
   "icons": {

@@ -1,6 +1,6 @@
 {
   "name": "rentradar-extension",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "RentRadar Austria Chrome extension: saved searches scanned in the browser, stored in IndexedDB",

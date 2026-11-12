@@ -1,5 +1,5 @@
 export const STORES = {
-  chrome: 'https://chromewebstore.google.com/search/RentRadar%20Austria',
+  chrome: 'https://chromewebstore.google.com/detail/fbknlkhcgimpehjafnhgdceejiihibfi',
   firefox: 'https://addons.mozilla.org/firefox/search/?q=RentRadar%20Austria',
 };
 

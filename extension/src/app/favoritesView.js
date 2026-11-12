@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { $, reduceMotion } from './dom.js';
 import { esc, euro, num, relTime } from './format.js';
 import { api, isFav, isQueued, isScanning, state } from './state.js';
-import { cardHtml, onCardAction } from './card.js';
+import { bindCardSwipe, cardHtml, onCardAction } from './card.js';
 import { detailId, favoritesRoute, route } from './router.js';
 import { confirmDelete, selectSearch } from './searches.js';
 
@@ -91,11 +91,17 @@ export async function loadFavorites() {
   else if (detailId() && $('#detail-view .empty')) route();
 }
 
+const favGroup = (card) => {
+  const section = card.closest('[data-search-id]');
+  const groups = section ? state.favData?.get(Number(section.dataset.searchId)) ?? [] : [];
+  return groups.find((x) => x.id === card.dataset.id);
+};
+
 export function bindFavorites() {
+  bindCardSwipe($('#favorites-view'), favGroup);
   $('#favorites-view').addEventListener('click', (e) => {
     if (e.target.closest('.card')) {
-      const sectionGroups = (card) => state.favData?.get(Number(card.closest('[data-search-id]').dataset.searchId)) ?? [];
-      onCardAction(e, (card) => sectionGroups(card).find((x) => x.id === card.dataset.id), renderFavorites);
+      onCardAction(e, favGroup, renderFavorites);
       return;
     }
     const pick = Number(e.target.closest('[data-fav-select]')?.dataset.favSelect);

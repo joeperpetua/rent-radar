@@ -767,7 +767,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 
 .card-link { position: absolute; inset: 0; z-index: 1; }
 
-.thumb { position: relative; aspect-ratio: 2 / 1; background: var(--surface-2); overflow: hidden; }
+.thumb { position: relative; aspect-ratio: 2 / 1; background: var(--surface-2); overflow: hidden; touch-action: pan-y pinch-zoom; }
 
 .thumb-nav {
   display: grid;

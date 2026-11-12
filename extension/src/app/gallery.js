@@ -1,6 +1,6 @@
 import { t } from './i18n.js';
 import { icon } from './icons.js';
-import { $, EASE_OUT, preloadImage, swapImage } from './dom.js';
+import { $, EASE_OUT, bindSwipeX, preloadImage, swapImage } from './dom.js';
 import { esc } from './format.js';
 import { openLightbox } from './lightbox.js';
 import { goBack } from './router.js';
@@ -96,6 +96,8 @@ export function bindGallery(el, g) {
     el.querySelectorAll('.thumbs button').forEach((b, j) => b.setAttribute('aria-current', String(j === idx)));
     el.querySelectorAll('.thumbs button')[idx]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   };
+  const frame = $('.gallery-main', el);
+  bindSwipeX(frame, (target) => (target.closest?.('.gallery-main') ? frame : null), (_frame, step) => show(Number(main.dataset.index) + step));
   $('.prev', el).addEventListener('click', () => show(Number(main.dataset.index) - 1));
   $('.next', el).addEventListener('click', () => show(Number(main.dataset.index) + 1));
   el.querySelectorAll('.thumbs button').forEach((b) => b.addEventListener('click', () => show(Number(b.dataset.index))));

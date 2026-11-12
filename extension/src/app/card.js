@@ -1,6 +1,6 @@
 import { getLang, t } from './i18n.js';
 import { icon } from './icons.js';
-import { $, EASE_OUT, preloadImage, swapImage } from './dom.js';
+import { $, EASE_OUT, bindSwipeX, preloadImage, swapImage } from './dom.js';
 import { esc, euro, fmtDay, num } from './format.js';
 import { placeLabel } from './places.js';
 import { isFav, sourceLabel } from './state.js';
@@ -104,10 +104,31 @@ export function onCardAction(e, lookup, rerender) {
     openLightbox(g.images, Number(img?.dataset.index ?? 0), img);
     return;
   }
-  const step = btn.dataset.action === 'img-next' ? 1 : -1;
+  stepCardImage(card, g, btn.dataset.action === 'img-next' ? 1 : -1);
+}
+
+function stepCardImage(card, g, step) {
+  const img = $('.thumb img', card);
+  if (!img || g.images.length < 2) return;
   const index = (Number(img.dataset.index ?? 0) + step + g.images.length) % g.images.length;
   img.dataset.index = index;
   swapImage(img, g.images[index], [{ opacity: 0.3, transform: `translateX(${step * 16}px)` }, {}], { duration: 240, easing: EASE_OUT });
   preloadImage(g.images[(index + step + g.images.length) % g.images.length]);
   $('[data-photo-counter]', card).textContent = `${index + 1} / ${g.images.length}`;
+}
+
+export function bindCardSwipe(root, lookup) {
+  const thumbAt = (target, x, y) => {
+    const card = target.closest?.('.card');
+    const g = card && lookup(card);
+    if (!g || g.images.length < 2) return null;
+    const thumb = $('.thumb', card);
+    const r = thumb?.getBoundingClientRect();
+    return r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom ? thumb : null;
+  };
+  bindSwipeX(root, thumbAt, (thumb, step) => {
+    const card = thumb.closest('.card');
+    const g = lookup(card);
+    if (g) stepCardImage(card, g, step);
+  });
 }

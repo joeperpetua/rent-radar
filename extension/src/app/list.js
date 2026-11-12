@@ -4,7 +4,7 @@ import { $, EASE_OUT, inViewport, reduceMotion } from './dom.js';
 import { esc } from './format.js';
 import { districtLabel, stateName } from './places.js';
 import { PAGE_SIZE, activeSearch, api, isQueued, isScanning, saveView, state } from './state.js';
-import { cardHtml, isDrop, onCardAction } from './card.js';
+import { bindCardSwipe, cardHtml, isDrop, onCardAction } from './card.js';
 import { radarSearch, renderRadar, stopRadar } from './radar.js';
 import { currentRoute, detailId, route } from './router.js';
 import { renderStatus } from './status.js';
@@ -224,5 +224,7 @@ export function bindList() {
     if (e.target.parentElement === e.currentTarget) e.target.classList.remove('entering');
   });
 
-  $('#grid').addEventListener('click', (e) => onCardAction(e, (card) => state.data?.groups.find((x) => x.id === card.dataset.id), renderList));
+  const groupOf = (card) => state.data?.groups.find((x) => x.id === card.dataset.id);
+  $('#grid').addEventListener('click', (e) => onCardAction(e, groupOf, renderList));
+  bindCardSwipe($('#grid'), groupOf);
 }

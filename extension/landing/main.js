@@ -103,10 +103,4 @@ window.addEventListener('message', (event) => {
 $('open').addEventListener('click', open);
 $('reload').addEventListener('click', () => location.reload());
 
-if (document.documentElement.dataset.rentradar) {
-  setState('installed');
-  const [nav] = performance.getEntriesByType('navigation');
-  if (nav?.type !== 'back_forward') open();
-} else {
-  setState('missing');
-}
+setState(document.documentElement.dataset.rentradar ? 'installed' : 'missing');

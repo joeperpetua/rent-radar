@@ -6,7 +6,7 @@ import { esc, euro } from './format.js';
 import { stateName } from './places.js';
 import { activeSearch, api, currentPrefs, state } from './state.js';
 import { loadListings } from './list.js';
-import { setDrawer } from './router.js';
+import { closeFilters } from './router.js';
 import { renderSearchList, replaceSearch } from './searches.js';
 import { renderStatus } from './status.js';
 
@@ -169,7 +169,7 @@ export function bindPrefs() {
       renderPrefs();
       renderStatus();
       flashHint(res.scanning ? t('savedRunning') : t('saved'));
-      setDrawer(false);
+      closeFilters();
       await loadListings();
     } catch (err) {
       flashHint(`${t('error')}: ${err.message}`);

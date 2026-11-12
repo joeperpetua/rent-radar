@@ -31,6 +31,7 @@ export const state = {
   returnRoute: null,
   returnScroll: null,
   openedFromList: false,
+  filtersPushed: false,
   detailShown: null,
   lightbox: null,
 };

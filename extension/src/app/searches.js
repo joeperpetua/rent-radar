@@ -5,7 +5,7 @@ import { esc, num, relTime } from './format.js';
 import { activeSearch, api, isQueued, isScanning, state } from './state.js';
 import { askConfirm, bindModal } from './modal.js';
 import { loadListings, renderList } from './list.js';
-import { detailId, favoritesRoute, setDrawer } from './router.js';
+import { closeFilters, detailId, favoritesRoute, openFilters } from './router.js';
 import { renderFavorites } from './favoritesView.js';
 import { flashHint, renderPrefs } from './prefs.js';
 import { renderStatus } from './status.js';
@@ -114,8 +114,7 @@ export function bindSearches() {
 
   const startNewSearch = () => {
     closeSearchMenu();
-    if (favoritesRoute()) location.hash = '#/';
-    setDrawer(true);
+    openFilters();
     selectSearch(null);
     $('#search-name').focus();
   };
@@ -137,7 +136,7 @@ export function bindSearches() {
     const id = Number(e.target.closest('[data-search]')?.dataset.search);
     if (!id) return;
     closeSearchMenu();
-    setDrawer(false);
+    closeFilters();
     if (favoritesRoute()) location.hash = '#/';
     if (id !== state.activeId) selectSearch(id);
     else if (detailId()) location.hash = '#/';

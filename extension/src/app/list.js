@@ -6,7 +6,7 @@ import { districtLabel, stateName } from './places.js';
 import { PAGE_SIZE, activeSearch, api, isQueued, isScanning, saveView, state } from './state.js';
 import { bindCardSwipe, cardHtml, isDrop, onCardAction } from './card.js';
 import { radarSearch, renderRadar, stopRadar } from './radar.js';
-import { currentRoute, detailId, route } from './router.js';
+import { detailId, listRoute, route } from './router.js';
 import { renderStatus } from './status.js';
 import { renderCategoryCounts } from './prefs.js';
 
@@ -132,7 +132,7 @@ function patchGrid(groups, { flip = false } = {}) {
 }
 
 const pager = new IntersectionObserver((entries) => {
-  if (!entries.some((e) => e.isIntersecting) || currentRoute() !== 'list') return;
+  if (!entries.some((e) => e.isIntersecting) || !listRoute()) return;
   state.listLimit += PAGE_SIZE;
   renderList();
 }, { rootMargin: `0px 0px ${PAGE_MARGIN_PX}px 0px` });
@@ -177,10 +177,10 @@ export async function loadListings() {
       } while (listingsReloadPending);
     } finally {
       listingsLoad = null;
-      if (currentRoute() === 'list') renderList();
+      if (listRoute()) renderList();
     }
   })();
-  if (currentRoute() === 'list') renderList();
+  if (listRoute()) renderList();
   return listingsLoad;
 }
 

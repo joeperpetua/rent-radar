@@ -5,7 +5,7 @@ import { esc } from './format.js';
 import { SOURCE_LABELS, VIEW_DEFAULTS, api, state } from './state.js';
 import { bindLightbox, closeLightbox, stepLightbox } from './lightbox.js';
 import { bindList, fitLoading, loadListings, renderList } from './list.js';
-import { bindNavigation, detailId, favoritesRoute, goBack, route, setDrawer } from './router.js';
+import { bindNavigation, closeFilters, detailId, favoritesRoute, goBack, route } from './router.js';
 import { renderDetail } from './detail.js';
 import { bindFavorites, renderFavorites } from './favoritesView.js';
 import { bindSearches, placeSearchMenu, renderSearchList } from './searches.js';
@@ -47,7 +47,7 @@ function onKeydown(e) {
     return;
   }
   if (e.key === 'Escape' && document.body.classList.contains('drawer-open')) {
-    setDrawer(false);
+    closeFilters();
     return;
   }
   if (!detailId() || e.target.matches('input, select, textarea')) return;

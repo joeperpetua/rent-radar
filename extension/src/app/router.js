@@ -9,19 +9,33 @@ const HERO = 'listing-hero';
 
 export const detailId = () => /^#\/l\/(.+)$/.exec(location.hash)?.[1];
 export const favoritesRoute = () => location.hash === '#/favorites';
-export const currentRoute = () => (detailId() ? 'detail' : favoritesRoute() ? 'favorites' : 'list');
+export const filtersRoute = () => location.hash === '#/filters';
+export const currentRoute = () => (detailId() ? 'detail' : favoritesRoute() ? 'favorites' : filtersRoute() ? 'filters' : 'list');
+export const listRoute = () => !detailId() && !favoritesRoute();
 
 function syncBottomNav() {
   const drawer = $('#sidebar').classList.contains('open');
   const r = state.route === 'detail' ? state.returnRoute ?? 'list' : state.route;
-  const active = drawer ? 'filters' : r === 'favorites' ? 'favorites' : 'listings';
+  const active = drawer || r === 'filters' ? 'filters' : r === 'favorites' ? 'favorites' : 'listings';
   for (const item of document.querySelectorAll('[data-bottom]')) item.setAttribute('aria-current', String(item.dataset.bottom === active));
 }
 
-export function setDrawer(open) {
+function setDrawer(open) {
   $('#sidebar').classList.toggle('open', open);
   document.body.classList.toggle('drawer-open', open);
   syncBottomNav();
+}
+
+export function openFilters() {
+  if (filtersRoute()) return;
+  state.filtersPushed = true;
+  location.hash = '#/filters';
+}
+
+export function closeFilters() {
+  if (!filtersRoute()) return;
+  if (state.filtersPushed) history.back();
+  else location.hash = '#/';
 }
 
 export function route() {
@@ -33,30 +47,32 @@ export function route() {
     state.returnScroll = window.scrollY;
     state.openedFromList = true;
   }
+  const view = next === 'filters' ? 'list' : next;
+  if (next !== 'filters') state.filtersPushed = false;
   document.body.classList.toggle('detail-mode', next === 'detail');
   document.body.classList.toggle('favorites-mode', next === 'favorites');
-  $('#list-view').hidden = next !== 'list';
-  $('#favorites-view').hidden = next !== 'favorites';
-  $('#detail-view').hidden = next !== 'detail';
+  $('#list-view').hidden = view !== 'list';
+  $('#favorites-view').hidden = view !== 'favorites';
+  $('#detail-view').hidden = view !== 'detail';
   $('#favorites-link').setAttribute('aria-current', next === 'favorites' ? 'page' : 'false');
   state.detailShown = id ? decodeURIComponent(id) : null;
-  if (next === 'detail') {
+  if (view === 'detail') {
     renderDetail(decodeURIComponent(id));
     window.scrollTo(0, 0);
   } else {
-    if (next === 'list') renderList();
+    if (view === 'list') renderList();
     else {
       if (prev !== 'detail') state.favSelected = null;
       renderFavorites({ fresh: prev !== 'detail' });
       if (prev !== 'detail' || !state.favData) loadFavorites();
     }
     const returning = prev === 'detail' && state.returnRoute === next;
-    window.scrollTo(0, returning ? state.returnScroll ?? 0 : prev === next ? window.scrollY : 0);
+    const kept = prev === next || (view === 'list' && (prev === 'list' || prev === 'filters'));
+    window.scrollTo(0, returning ? state.returnScroll ?? 0 : kept ? window.scrollY : 0);
     state.openedFromList = false;
   }
   state.route = next;
-  if (next !== 'list') setDrawer(false);
-  else syncBottomNav();
+  setDrawer(next === 'filters');
 }
 
 function cardThumb(id) {
@@ -77,12 +93,14 @@ function navigate() {
   const id = detailId();
   const opening = Boolean(id) && state.route !== 'detail';
   const closing = !id && state.route === 'detail';
-  if (reduceMotion() || !document.startViewTransition || state.lightbox) {
+  const next = currentRoute();
+  const filters = next === 'filters' || state.route === 'filters';
+  if (reduceMotion() || !document.startViewTransition || state.lightbox || filters) {
     route();
     return;
   }
   if (!opening && !closing) {
-    if (currentRoute() === state.route) route();
+    if (next === state.route) route();
     else document.startViewTransition(route);
     return;
   }
@@ -105,17 +123,13 @@ export function goBack() {
 }
 
 export function bindNavigation() {
-  $('#filters-toggle').addEventListener('click', () => setDrawer(!$('#sidebar').classList.contains('open')));
-  $('#drawer-close').addEventListener('click', () => setDrawer(false));
+  const toggleFilters = () => (filtersRoute() ? closeFilters() : openFilters());
+  $('#filters-toggle').addEventListener('click', toggleFilters);
+  $('#drawer-close').addEventListener('click', closeFilters);
   $('#bottom-nav').addEventListener('click', (e) => {
     const item = e.target.closest('[data-bottom]');
     if (!item) return;
-    if (item.dataset.bottom === 'filters') {
-      if (currentRoute() !== 'list') location.hash = '#/';
-      setDrawer(!$('#sidebar').classList.contains('open'));
-      return;
-    }
-    setDrawer(false);
+    if (item.dataset.bottom === 'filters') toggleFilters();
   });
 
   window.addEventListener('hashchange', navigate);

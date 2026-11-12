@@ -28,9 +28,11 @@ Tests run the core against `fake-indexeddb`. The extension has no runtime depend
 npm run build
 npm run build:chromium
 npm run build:firefox
+npm run build patch
+npm run build:firefox minor
 ```
 
-`scripts/build.js` copies `src/` to `dist/<target>/`, writes the target's manifest and packs it as `dist/rentradar-<target>-<version>.zip` for store upload. The extension ships only through the stores; the landing page links to the listings and offers no downloads.
+`scripts/build.js` copies `src/` to `dist/<target>/`, writes the target's manifest and packs it as `dist/rentradar-<target>-<version>.zip` for store upload. A `major`, `minor` or `patch` argument raises the version in `package.json`, `package-lock.json` and `src/manifest.json` before the build, so the zips carry the new number. Without it the version stays as it is. `--bump patch` is the same thing spelled as a flag, but npm needs `npm run build -- --bump patch` to pass a flag through. The extension ships only through the stores; the landing page links to the listings and offers no downloads.
 
 - **chromium**: `src/manifest.json` unchanged (service worker background). Upload to the Chrome Web Store; Edge, Brave, Vivaldi, Kiwi, Quetta and Orion install from there.
 - **firefox**: `background.scripts` instead of `service_worker`, no `minimum_chrome_version`, plus `browser_specific_settings` (gecko id `rentradar-austria@joeperpetua`, min 128 on desktop and Android, `data_collection_permissions: none`). Upload to addons.mozilla.org; AMO signs it. `gecko_android` makes it listable for Firefox on Android.

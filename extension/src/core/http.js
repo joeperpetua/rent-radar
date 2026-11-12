@@ -15,7 +15,32 @@ export function decodeEntities(text) {
   }) ?? text;
 }
 
+export function hostPermitted(url, patterns) {
+  if (!patterns) return true;
+  let target;
+  try {
+    target = new URL(url);
+  } catch {
+    return false;
+  }
+  return patterns.some((pattern) => {
+    const m = /^([a-z*]+):\/\/([^/]+)\//.exec(pattern);
+    if (!m || (m[1] !== '*' && `${m[1]}:` !== target.protocol)) return false;
+    if (m[2] === '*') return true;
+    if (!m[2].startsWith('*.')) return target.hostname === m[2];
+    const domain = m[2].slice(2);
+    return target.hostname === domain || target.hostname.endsWith(`.${domain}`);
+  });
+}
+
+const HOST_PERMISSIONS = globalThis.chrome?.runtime?.getManifest?.()?.host_permissions ?? null;
+
+function assertPermitted(url) {
+  if (!hostPermitted(url, HOST_PERMISSIONS)) throw new Error(`host not permitted: ${url}`);
+}
+
 export async function fetchText(url, { retries = 2, timeout = 20000, accept, headers: customHeaders, full = false, charset, method, body, credentials } = {}) {
+  assertPermitted(url);
   const headers = {
     ...HEADERS,
     ...(accept ? { Accept: accept } : {}),
@@ -37,6 +62,7 @@ export async function fetchText(url, { retries = 2, timeout = 20000, accept, hea
 }
 
 export async function postJson(url, body, { retries = 2, timeout = 20000 } = {}) {
+  assertPermitted(url);
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {

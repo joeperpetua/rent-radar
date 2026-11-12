@@ -1,6 +1,5 @@
 const OVERPASS_URLS = [
   'https://overpass-api.de/api/interpreter',
-  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
 ];
 const CACHE_KEY = 'immo-tool:nearby:v1';

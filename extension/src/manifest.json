@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RentRadar Austria",
   "version": "3.0.0",
-  "description": "Saved rental searches across Austrian portals, cooperatives and brokers, scanned in the browser and stored locally.",
+  "description": "Every Austrian rental portal in one search. Duplicates merged, price drops tracked, all data kept private in your browser.",
   "minimum_chrome_version": "116",
   "icons": {
     "16": "icons/16.png",
@@ -31,8 +31,26 @@
     "unlimitedStorage"
   ],
   "host_permissions": [
-    "https://www.willhaben.at/*",
-    "https://www.immobilienscout24.at/*",
-    "https://*/*"
+    "https://*.willhaben.at/*",
+    "https://*.immobilienscout24.at/*",
+    "https://immobilien.derstandard.at/*",
+    "https://immo.sn.at/*",
+    "https://*.findmyhome.at/*",
+    "https://*.dibeo.at/*",
+    "https://*.rentola.at/*",
+    "https://*.wunderflats.com/*",
+    "https://*.immomarktplatz.at/*",
+    "https://*.immocontract.at/*",
+    "https://*.lebenswert-wohnen.at/*",
+    "https://*.novel-real.at/*",
+    "https://*.wohnreich.at/*",
+    "https://*.immovent.at/*",
+    "https://*.realbrokers.at/*",
+    "https://*.edlauer.com/*",
+    "https://*.bwsg.at/*",
+    "https://*.oevw.at/*",
+    "https://*.nebau.at/*",
+    "https://overpass-api.de/*",
+    "https://overpass.private.coffee/*"
   ]
 }

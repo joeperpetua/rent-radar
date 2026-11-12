@@ -314,6 +314,7 @@ function renderPrefs() {
   const form = $('#prefs');
   $('#prefs-title').textContent = search ? t('editSearch') : t('newSearchTitle');
   $('#drawer-title').textContent = $('#prefs-title').textContent;
+  $('#prefs-new').hidden = !search;
   $('#save-search').innerHTML = `${icon(search ? 'save' : 'radar')}<span>${esc(search ? t('saveSearch') : t('createSearch'))}</span>`;
   form.elements.namedItem('name').value = search?.name ?? '';
   form.elements.namedItem('name').placeholder = suggestName(prefs);
@@ -1777,13 +1778,15 @@ function bindEvents() {
     if ($('#settings-menu').matches(':popover-open')) placeSettingsMenu();
   });
 
-  $('#new-search').addEventListener('click', () => {
+  const startNewSearch = () => {
     closeSearchMenu();
     if (favoritesRoute()) location.hash = '#/';
     setDrawer(true);
     selectSearch(null);
     $('#search-name').focus();
-  });
+  };
+  $('#new-search').addEventListener('click', startNewSearch);
+  $('#prefs-new').addEventListener('click', startNewSearch);
 
   $('#search-list').addEventListener('click', (e) => {
     const remove = Number(e.target.closest('[data-delete]')?.dataset.delete);

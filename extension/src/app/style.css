@@ -500,6 +500,9 @@ input[type="text"] {
 }
 
 .sidebar h2 { margin: 0 0 14px; font-size: 16px; }
+.prefs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+.sidebar .prefs-head h2 { margin: 0; min-width: 0; }
+.prefs-head .link { flex: none; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin: 0 0 16px; border: 0; padding: 0; min-width: 0; }
 
@@ -1860,7 +1863,7 @@ body.lightbox-open { overflow: hidden; }
   .drawer-close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font-size: 20px; cursor: pointer; transition: transform .12s ease, background .15s ease; }
   .drawer-close:active { transform: scale(.94); }
   #prefs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); }
-  #prefs-title { display: none; }
+  .prefs-head { display: none; }
   #save-search { position: sticky; bottom: 0; z-index: 1; box-shadow: 0 0 0 12px var(--surface); }
 
   [data-style="styled"] .bottom-nav > * { border-radius: 18px; }

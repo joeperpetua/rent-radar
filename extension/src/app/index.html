@@ -83,7 +83,10 @@
         <button class="drawer-close" id="drawer-close" type="button" data-i18n-aria="close"><i data-icon="x"></i></button>
       </header>
       <form id="prefs" autocomplete="off">
-        <h2 id="prefs-title"></h2>
+        <div class="prefs-head">
+          <h2 id="prefs-title"></h2>
+          <button type="button" class="link" id="prefs-new" hidden><i data-icon="plus"></i><span data-i18n="newSearch">Neue Suche</span></button>
+        </div>
 
         <label class="field">
           <span data-i18n="searchName">Name</span>

@@ -1,0 +1,51 @@
+SHORT DESCRIPTION (max 132 characters)
+
+Every Austrian rental portal in one search. Duplicates merged, price drops tracked, all data kept private in your browser.
+
+
+DETAILED DESCRIPTION
+
+RentRadar Austria searches the big Austrian rental portals, housing cooperatives and small brokers at once, and turns the results into one clean list without duplicates.
+
+Stop opening ten tabs every morning. Save your search once, press refresh, and see what's new.
+
+ONE SEARCH, EVERY SOURCE
+• 11 sources scanned together: large portals, housing cooperatives and broker websites
+• Apartments and houses: regular rentals, cooperative flats, council flats, flatshares and flat swaps
+• Watch every source scan live, with results showing up as they arrive
+
+NO MORE DUPLICATES
+• The same flat listed on several sites becomes one card
+• Every original listing stays one click away
+• Price differences between sites at a glance
+
+SPOT THE GOOD ONES FIRST
+• "New" badge on listings that weren't there last time
+• Price history for every listing, with price-drop badges and a price-drop filter
+• Sort by newest, price, €/m², size or biggest price drop
+• Free-text search across title, street and district
+
+FILTERS THAT DO WHAT THEY SAY
+• Region, down to single Vienna districts
+• Rent, size, rooms, category and source
+• You get exactly what you tick. Nothing hidden, nothing extra
+
+SAVED SEARCHES AND FAVOURITES
+• Keep as many searches as you like and switch between them instantly
+• Favourites per search, with average rent, price per m², size and rent range of your shortlist
+
+SMART EXTRAS (Chrome 138 and newer)
+• Translate listing descriptions into your language, on your device
+• AI location rating for public transport, everyday shopping and green space, done by the browser's built-in AI
+
+MADE FOR DAILY USE
+• Three looks: Styled, Modern and Compact
+• Light and dark mode, English and German
+• Full mobile layout with pull-to-refresh, for Android browsers that support extensions
+
+PRIVATE BY DESIGN
+• No account, no tracking, no ads, no RentRadar server
+• Searches, listings and price history are stored only in your browser
+• Scans run only when you start them, never in the background
+• No contact details are collected. You contact landlords through the original listing
+• See how much space your data uses and clean it up in one click

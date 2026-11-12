@@ -1,0 +1,51 @@
+KURZBESCHREIBUNG (max. 132 Zeichen)
+
+Alle Mietportale Österreichs in einer Suche. Duplikate zusammengeführt, Preissenkungen im Blick, Daten privat im Browser.
+
+
+AUSFÜHRLICHE BESCHREIBUNG
+
+RentRadar Austria durchsucht die großen österreichischen Mietportale, Genossenschaften und kleine Makler gleichzeitig und macht daraus eine übersichtliche Liste ohne Duplikate.
+
+Schluss mit zehn offenen Tabs jeden Morgen. Suche einmal speichern, aktualisieren, und du siehst sofort, was neu ist.
+
+EINE SUCHE, ALLE QUELLEN
+• 11 Quellen auf einmal: große Portale, Genossenschaften und Makler-Websites
+• Wohnungen und Häuser: reguläre Mietwohnungen, Genossenschafts- und Gemeindewohnungen, WG-Zimmer und Wohnungstausch
+• Jede Quelle live beim Scannen beobachten, Ergebnisse erscheinen sofort
+
+SCHLUSS MIT DUPLIKATEN
+• Dieselbe Wohnung auf mehreren Seiten wird zu einer Karte
+• Jedes Original-Inserat bleibt einen Klick entfernt
+• Preisunterschiede zwischen den Seiten auf einen Blick
+
+DIE GUTEN ZUERST SEHEN
+• „Neu“-Markierung für Inserate, die beim letzten Mal noch nicht da waren
+• Preisverlauf für jedes Inserat, mit Markierung und Filter für Preissenkungen
+• Sortieren nach Neueste, Preis, €/m², Fläche oder größter Preissenkung
+• Freitextsuche nach Titel, Straße und Bezirk
+
+FILTER, DIE TUN, WAS SIE SAGEN
+• Bundesland bis hinunter zum einzelnen Wiener Bezirk
+• Miete, Fläche, Zimmer, Kategorie und Quelle
+• Du bekommst genau das, was du anhakst. Nichts versteckt, nichts dazu
+
+GESPEICHERTE SUCHEN UND FAVORITEN
+• Beliebig viele Suchen speichern und sofort zwischen ihnen wechseln
+• Favoriten je Suche, mit Durchschnittsmiete, Preis pro m², Fläche und Mietspanne deiner Auswahl
+
+PRAKTISCHE EXTRAS (ab Chrome 138)
+• Inseratstexte in deine Sprache übersetzen, direkt auf deinem Gerät
+• KI-Lagebewertung für Öffis, Nahversorgung und Grünraum, erstellt von der eingebauten KI des Browsers
+
+FÜR DEN TÄGLICHEN EINSATZ
+• Drei Designs: Styled, Modern und Kompakt
+• Hell- und Dunkelmodus, Deutsch und Englisch
+• Eigenes Handy-Layout mit Pull-to-Refresh, für Android-Browser mit Erweiterungen
+
+PRIVAT VON ANFANG AN
+• Kein Konto, kein Tracking, keine Werbung, kein RentRadar-Server
+• Suchen, Inserate und Preisverlauf werden nur in deinem Browser gespeichert
+• Gescannt wird nur, wenn du es startest, nie im Hintergrund
+• Keine Kontaktdaten werden gesammelt. Kontakt läuft über das Original-Inserat
+• Sieh, wie viel Speicher deine Daten belegen, und räum sie mit einem Klick auf

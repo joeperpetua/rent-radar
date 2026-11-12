@@ -145,7 +145,6 @@ export const handlers = {
       if (details.deposit != null) patch.deposit = details.deposit;
       if (details.agency) patch.agency = details.agency;
       if (details.images?.length) patch.images = details.images;
-      if (details.directVerified) patch.directVerified = true;
       await updateListingData(id, patch);
       return { description: details.description ?? listing.description };
     }

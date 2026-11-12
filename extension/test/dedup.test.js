@@ -23,7 +23,7 @@ function listing(fields) {
 function filler(count = 240) {
   return Array.from({ length: count }, (_, i) => listing({
     id: `filler${i}`,
-    source: ['willhaben', 'immoscout', 'rentola'][i % 3],
+    source: ['willhaben', 'immoscout', 'derstandard'][i % 3],
     title: `${COMMON[i % COMMON.length]} ${COMMON[(i * 7) % COMMON.length]} wohnung objekt${i}`,
     price: 500 + i * 3.37,
     area: 40 + (i % 90) + 0.13 * (i % 7),
@@ -106,9 +106,9 @@ test('tolerates a one-room disagreement when everything else matches', () => {
   const title = '2-3 - Zimmer-Wohnung mit ca. 65 m2 ab sofort zur Miete nahe U3 Enkplatz!';
   const fixtures = [
     listing({ id: 'r', title, price: 972.91, area: 65, rooms: 2, postcode: '1110' }),
-    listing({ id: 'r', source: 'rentola', title, price: 973, area: 65, rooms: 3, postcode: '1110' }),
+    listing({ id: 'r', source: 'derstandard', title, price: 973, area: 65, rooms: 3, postcode: '1110' }),
   ];
-  assert.deepEqual(groupsOf(fixtures), [['rentola:r', 'willhaben:r']]);
+  assert.deepEqual(groupsOf(fixtures), [['derstandard:r', 'willhaben:r']]);
 });
 
 test('keeps units apart when prices differ', () => {

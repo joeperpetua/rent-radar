@@ -6,15 +6,15 @@ export const DISTRICTS = [
 ].map((name, i) => ({ number: i + 1, name, postcode: `1${String(i + 1).padStart(2, '0')}0` }));
 
 export const STATES = [
-  { id: 'wien', name: 'Wien', willhaben: 900, immoscout: '009', rentola: 'wien', immoscoutPath: 'wien/wien' },
-  { id: 'niederoesterreich', name: 'Niederösterreich', willhaben: 3, immoscout: '003', rentola: 'niederosterreich', immoscoutPath: 'niederoesterreich' },
-  { id: 'burgenland', name: 'Burgenland', willhaben: 1, immoscout: '001', rentola: 'burgenland', immoscoutPath: 'burgenland' },
-  { id: 'oberoesterreich', name: 'Oberösterreich', willhaben: 4, immoscout: '004', rentola: 'oberosterreich', immoscoutPath: 'oberoesterreich' },
-  { id: 'salzburg', name: 'Salzburg', willhaben: 5, immoscout: '005', rentola: 'salzburg', immoscoutPath: 'salzburg' },
-  { id: 'steiermark', name: 'Steiermark', willhaben: 6, immoscout: '006', rentola: 'steiermark', immoscoutPath: 'steiermark' },
-  { id: 'kaernten', name: 'Kärnten', willhaben: 2, immoscout: '002', rentola: 'karnten', immoscoutPath: 'kaernten' },
-  { id: 'tirol', name: 'Tirol', willhaben: 7, immoscout: '007', rentola: 'tirol', immoscoutPath: 'tirol' },
-  { id: 'vorarlberg', name: 'Vorarlberg', willhaben: 8, immoscout: '008', rentola: 'vorarlberg', immoscoutPath: 'vorarlberg' },
+  { id: 'wien', name: 'Wien', willhaben: 900, immoscout: '009', immoscoutPath: 'wien/wien' },
+  { id: 'niederoesterreich', name: 'Niederösterreich', willhaben: 3, immoscout: '003', immoscoutPath: 'niederoesterreich' },
+  { id: 'burgenland', name: 'Burgenland', willhaben: 1, immoscout: '001', immoscoutPath: 'burgenland' },
+  { id: 'oberoesterreich', name: 'Oberösterreich', willhaben: 4, immoscout: '004', immoscoutPath: 'oberoesterreich' },
+  { id: 'salzburg', name: 'Salzburg', willhaben: 5, immoscout: '005', immoscoutPath: 'salzburg' },
+  { id: 'steiermark', name: 'Steiermark', willhaben: 6, immoscout: '006', immoscoutPath: 'steiermark' },
+  { id: 'kaernten', name: 'Kärnten', willhaben: 2, immoscout: '002', immoscoutPath: 'kaernten' },
+  { id: 'tirol', name: 'Tirol', willhaben: 7, immoscout: '007', immoscoutPath: 'tirol' },
+  { id: 'vorarlberg', name: 'Vorarlberg', willhaben: 8, immoscout: '008', immoscoutPath: 'vorarlberg' },
 ];
 
 const STATE_BY_ID = new Map(STATES.map((s) => [s.id, s]));

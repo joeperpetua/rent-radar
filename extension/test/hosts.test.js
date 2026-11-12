@@ -34,7 +34,6 @@ test('every source request host is covered by the manifest', () => {
     'https://www.willhaben.at/iad/object?adId=1',
     'https://www.immobilienscout24.at/portal/graphql',
     'https://www.immobilienscout24.at/expose/graphql',
-    'https://rentola.at/en/rent',
     'https://wunderflats.com/en/furnished-apartments/vienna',
     'https://www.immomarktplatz.at/de/immobilien',
     'https://overpass-api.de/api/interpreter',

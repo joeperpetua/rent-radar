@@ -10,7 +10,7 @@ RentRadar Austria searches the big Austrian rental portals, housing cooperatives
 Stop opening ten tabs every morning. Save your search once, press refresh, and see what's new.
 
 ONE SEARCH, EVERY SOURCE
-• 11 sources scanned together: large portals, housing cooperatives and broker websites
+• Multiple sources scanned together: large portals, housing cooperatives and broker websites
 • Apartments and houses: regular rentals, cooperative flats, council flats, flatshares and flat swaps
 • Watch every source scan live, with results showing up as they arrive
 

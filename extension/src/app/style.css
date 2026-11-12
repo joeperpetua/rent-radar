@@ -1861,9 +1861,17 @@ body.lightbox-open { overflow: hidden; }
   .drawer-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; font-weight: 700; }
   .drawer-close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font-size: 20px; cursor: pointer; transition: transform .12s ease, background .15s ease; }
   .drawer-close:active { transform: scale(.94); }
-  #prefs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); }
+  #prefs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 18px 0; }
+  #prefs-hint:empty { display: none; }
   .prefs-head { display: none; }
-  #save-search { position: sticky; bottom: 0; z-index: 1; box-shadow: 0 0 0 12px var(--surface); }
+  .prefs-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 0 -18px;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface);
+  }
 
   [data-style="styled"] .bottom-nav > * { border-radius: 18px; }
   [data-style="styled"] .drawer-close { border-radius: 999px; }

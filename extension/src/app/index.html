@@ -73,6 +73,21 @@
           <button type="button" data-lang="en">English</button>
         </div>
       </fieldset>
+      <fieldset class="settings-group storage" id="storage">
+        <legend data-i18n="storage">Speicher</legend>
+        <div class="storage-usage">
+          <span class="storage-icon" aria-hidden="true"><i data-icon="database"></i></span>
+          <div class="storage-text">
+            <strong id="storage-size">–</strong>
+            <small id="storage-detail"></small>
+          </div>
+        </div>
+        <div class="storage-actions">
+          <button class="btn" type="button" id="prune-listings" data-i18n-title="pruneHint"><i data-icon="brush-cleaning"></i><span data-i18n="pruneListings">Aufräumen</span></button>
+          <button class="btn btn-ghost btn-danger-text" type="button" id="clear-listings"><i data-icon="trash-2"></i><span data-i18n="clearListings">Alle Inserate löschen</span></button>
+        </div>
+        <p class="storage-hint" id="storage-hint" aria-live="polite"></p>
+      </fieldset>
     </div>
   </header>
 
@@ -231,6 +246,18 @@
       <div class="modal-actions">
         <button class="btn btn-ghost" type="button" data-modal="cancel" data-i18n="cancel"></button>
         <button class="btn btn-danger" type="button" data-modal="confirm"><i data-icon="trash-2"></i><span data-i18n="deleteConfirm"></span></button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="confirm-clear" aria-labelledby="confirm-clear-title">
+    <div class="modal-body">
+      <span class="modal-icon"><i data-icon="trash-2"></i></span>
+      <h2 id="confirm-clear-title" data-i18n="clearTitle"></h2>
+      <p id="confirm-clear-text"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-modal="cancel" data-i18n="cancel"></button>
+        <button class="btn btn-danger" type="button" data-modal="confirm"><i data-icon="trash-2"></i><span data-i18n="clearConfirm"></span></button>
       </div>
     </div>
   </dialog>

@@ -1,6 +1,6 @@
-import { buildView, emptyView, enqueueScan, cancelQueued, isBusy, scanStatus, SOURCES } from './scan.js';
+import { buildView, emptyView, enqueueScan, cancelQueued, isBusy, isIdle, scanStatus, SOURCES } from './scan.js';
 import { DEFAULT_PREFS, missingGroups, needsRescan, PROPERTY_TYPES, sanitizeName, sanitizePrefs } from './prefs.js';
-import { allSettings, createSearch, deleteSearch, getFavorites, getListing, getSearch, listSearches, setSetting, updateFavorites, updateListingData, updateSearch } from './db.js';
+import { allSettings, clearListings, createSearch, deleteSearch, getFavorites, getListing, getSearch, listSearches, pruneListings, setSetting, storageInfo, updateFavorites, updateListingData, updateSearch } from './db.js';
 import { DISTRICTS, STATES } from './geo.js';
 import { CATEGORIES } from './categories.js';
 
@@ -32,6 +32,22 @@ function listingIds(value) {
     throw new ApiError('invalid listing ids');
   }
   return value;
+}
+
+async function usageBytes() {
+  try {
+    return (await globalThis.navigator?.storage?.estimate?.())?.usage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function storage() {
+  return { ...await storageInfo(), bytes: await usageBytes() };
+}
+
+function requireIdle() {
+  if (!isIdle()) throw new ApiError('scan running');
 }
 
 const summary = (search) => ({ ...search, busy: isBusy(search.id) });
@@ -86,6 +102,20 @@ export const handlers = {
   },
 
   status: () => scanStatus(),
+
+  storage,
+
+  pruneListings: async () => {
+    requireIdle();
+    const removed = await pruneListings();
+    return { removed, storage: await storage() };
+  },
+
+  clearListings: async () => {
+    requireIdle();
+    const removed = await clearListings();
+    return { removed, storage: await storage() };
+  },
 
   favorites: async ({ add = [], remove = [] }) => ({ favorites: await updateFavorites({ add: listingIds(add), remove: listingIds(remove) }) }),
 

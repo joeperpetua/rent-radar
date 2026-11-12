@@ -1454,6 +1454,17 @@ body.lightbox-open { overflow: hidden; }
 .settings-group + .settings-group { margin-top: 14px; }
 .style-picker { display: flex; flex-direction: column; gap: 4px; }
 .settings-group legend { padding: 0 2px; margin-bottom: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.storage-usage { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 12px; background: var(--surface-2); }
+.storage-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 18px; }
+.storage-text { display: flex; flex-direction: column; min-width: 0; }
+.storage-text strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.storage-text small { font-size: 12px; color: var(--muted); }
+.storage-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.storage-actions .btn { flex: 1 1 auto; height: 34px; padding: 0 12px; font-size: 13px; }
+.btn.btn-danger-text { color: var(--danger); }
+.btn.btn-danger-text:hover:not(:disabled) { border-color: var(--danger); background: var(--danger-soft); }
+.storage-hint { margin: 6px 2px 0; font-size: 12px; color: var(--muted); }
+.storage-hint:empty { display: none; }
 .style-option { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid transparent; border-radius: 12px; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
 .style-option:hover { background: var(--surface-2); }
 .style-option:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }

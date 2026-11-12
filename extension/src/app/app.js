@@ -56,6 +56,10 @@ const state = {
   favToken: 0,
   favSelected: null,
   statusHtml: '',
+  storage: null,
+  storageBusy: false,
+  storageHint: '',
+  storageToken: 0,
   listLimit: PAGE_SIZE,
 };
 
@@ -92,6 +96,19 @@ function formatter(digits, currency) {
 
 const euro = (n, digits = 0) => (n == null ? '–' : formatter(digits, true).format(n));
 const num = (n, digits = 0) => (n == null ? '–' : formatter(digits, false).format(n));
+const BYTE_UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte'];
+
+function fmtBytes(bytes) {
+  if (bytes == null) return '–';
+  let n = bytes;
+  let i = 0;
+  while (n >= 1000 && i < BYTE_UNITS.length - 1) {
+    n /= 1000;
+    i++;
+  }
+  return new Intl.NumberFormat(locale(), { style: 'unit', unit: BYTE_UNITS[i], unitDisplay: 'short', maximumFractionDigits: i < 2 ? 0 : 1 }).format(n);
+}
+
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short' }) : '–');
 const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) : '–');
 const isDrop = (g) => g.priceChange != null && g.priceChange.delta < 0;
@@ -299,6 +316,62 @@ function applyTheme(theme) {
 }
 
 const withTransition = (fn) => (reduceMotion() || !document.startViewTransition ? fn() : document.startViewTransition(fn));
+
+const scanIdle = () => state.status?.running == null && !state.status?.queue?.length;
+
+function renderStorage() {
+  const s = state.storage;
+  const idle = scanIdle();
+  $('#storage-size').textContent = s ? fmtBytes(s.bytes) : t('loading');
+  $('#storage-detail').textContent = !s ? '' : s.prunable
+    ? t('storageDetailPrunable', { n: num(s.listings), p: num(s.prunable) })
+    : t('storageDetail', { n: num(s.listings) });
+  $('#prune-listings').disabled = !s?.prunable || !idle || state.storageBusy;
+  $('#clear-listings').disabled = !s?.listings || !idle || state.storageBusy;
+  $('#storage-hint').textContent = s && !idle ? t('storageScanning') : state.storageHint;
+}
+
+async function loadStorage() {
+  const token = ++state.storageToken;
+  try {
+    const storage = await api('storage');
+    if (token === state.storageToken) state.storage = storage;
+  } catch {}
+  renderStorage();
+}
+
+async function reloadData() {
+  state.favData = null;
+  await refreshSearches();
+  await loadListings();
+  if (favoritesRoute()) loadFavorites();
+  else if (detailId()) route();
+}
+
+async function storageAction(method) {
+  state.storageBusy = true;
+  state.storageToken++;
+  renderStorage();
+  try {
+    const { removed, storage } = await api(method);
+    state.storage = storage;
+    state.storageHint = t('storageRemoved', { n: num(removed) });
+    await reloadData();
+  } catch (err) {
+    state.storageHint = `${t('error')}: ${err.message}`;
+  } finally {
+    state.storageBusy = false;
+    renderStorage();
+  }
+}
+
+async function confirmClear() {
+  const menu = $('#settings-menu');
+  $('#confirm-clear-text').textContent = t('confirmClear', { n: num(state.storage?.listings) });
+  const confirmed = await askConfirm($('#confirm-clear'));
+  if (!menu.matches(':popover-open')) menu.showPopover();
+  if (confirmed) await storageAction('clearListings');
+}
 
 function switchStyle(style) {
   $('#settings-menu').hidePopover();
@@ -1515,6 +1588,7 @@ function renderAll() {
   renderPrefs();
   renderStatus();
   renderToasts();
+  if (state.storage) renderStorage();
   const id = detailId();
   if (id) renderDetail(decodeURIComponent(id));
   else if (favoritesRoute()) renderFavorites();
@@ -1589,6 +1663,10 @@ async function onScanStatus(status) {
   const finished = status.progress?.finishedAt && status.progress.finishedAt !== prev?.progress?.finishedAt;
   const queueChanged = JSON.stringify([prev?.running, prev?.queue]) !== JSON.stringify([status.running, status.queue]);
   renderToasts();
+  if ($('#settings-menu').matches(':popover-open')) {
+    if (finished) loadStorage();
+    else renderStorage();
+  }
   if (finished || queueChanged) await refreshSearches();
   renderStatus();
   const progressive = Boolean(activeSearch()?.lastScanAt) && sourceLanded(prev?.progress, status.progress);
@@ -1761,8 +1839,15 @@ function bindEvents() {
     if (e.newState === 'open') placeSearchMenu();
   });
   $('#settings-menu').addEventListener('beforetoggle', (e) => {
-    if (e.newState === 'open') placeSettingsMenu();
+    if (e.newState !== 'open') return;
+    placeSettingsMenu();
+    if (state.storageBusy) return;
+    state.storageHint = '';
+    renderStorage();
+    loadStorage();
   });
+  $('#prune-listings').addEventListener('click', () => storageAction('pruneListings'));
+  $('#clear-listings').addEventListener('click', confirmClear);
   $('#settings-menu').addEventListener('click', (e) => {
     if (e.target.matches('input[name="style"]')) switchStyle(e.target.value);
   });
@@ -1843,6 +1928,7 @@ function bindEvents() {
   });
 
   bindModal($('#confirm-delete'));
+  bindModal($('#confirm-clear'));
 
   for (const id of AUTOSAVED) $(`#${id}`).addEventListener('change', () => savePrefsPatch({ [id]: tickedValues(id) }));
 

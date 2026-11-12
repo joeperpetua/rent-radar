@@ -216,6 +216,45 @@ export function deleteSearch(id) {
   });
 }
 
+const groupCaches = () => IDBKeyRange.bound('groups:', 'groups:\uffff');
+
+async function prunePlan(t) {
+  const sources = new Map((await req(t.objectStore(SEARCHES).getAll())).map((s) => [s.id, new Set(s.prefs?.sources ?? [])]));
+  const keep = new Set();
+  const members = [];
+  for (const m of await req(t.objectStore(MEMBERS).getAll())) {
+    if (m.removedAt || !sources.get(m.searchId)?.has(m.source)) members.push([m.searchId, m.listingId]);
+    else keep.add(m.listingId);
+  }
+  const listings = (await req(t.objectStore(LISTINGS).getAllKeys())).filter((id) => !keep.has(id));
+  const scans = (await req(t.objectStore(SCANS).getAll())).filter((s) => !sources.has(s.searchId)).map((s) => s.id);
+  return { members, listings, scans };
+}
+
+export const storageInfo = () => read([LISTINGS, MEMBERS, SEARCHES, SCANS], async (t) => ({
+  listings: await req(t.objectStore(LISTINGS).count()),
+  prunable: (await prunePlan(t)).listings.length,
+}));
+
+export const pruneListings = () => write([LISTINGS, MEMBERS, SEARCHES, SCANS, META], async (t) => {
+  const plan = await prunePlan(t);
+  for (const key of plan.members) t.objectStore(MEMBERS).delete(key);
+  for (const id of plan.listings) t.objectStore(LISTINGS).delete(id);
+  for (const id of plan.scans) t.objectStore(SCANS).delete(id);
+  t.objectStore(META).delete(groupCaches());
+  await bumpVersion(t);
+  return plan.listings.length;
+});
+
+export const clearListings = () => write([LISTINGS, MEMBERS, SEARCHES, SCANS, META], async (t) => {
+  const count = await req(t.objectStore(LISTINGS).count());
+  for (const store of [LISTINGS, MEMBERS, SCANS]) t.objectStore(store).clear();
+  await eachCursor(t.objectStore(SEARCHES).openCursor(), (c) => c.update({ ...c.value, scanScope: null }));
+  t.objectStore(META).delete(groupCaches());
+  await bumpVersion(t);
+  return count;
+});
+
 function latestPrice(prices) {
   return prices.reduce((latest, p) => (!latest || p.at > latest.at ? p : latest), null)?.price;
 }

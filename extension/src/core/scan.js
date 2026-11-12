@@ -25,6 +25,8 @@ export function onScanChange(fn) {
 
 export const scanStatus = () => ({ running: running?.searchId ?? null, queue: [...queue], progress });
 
+export const isIdle = () => !running && !queue.length;
+
 export const isBusy = (searchId) => running?.searchId === searchId || queue.includes(searchId);
 
 export async function runScan(search, log = console.log) {

@@ -31,9 +31,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message !== 'duplicate-app') return;
   appTabs().then(async (tabs) => {
-    const other = tabs.find((c) => c.tabId !== sender.tab.id);
-    if (!other) return;
-    await focusTab(other);
-    await chrome.tabs.remove(sender.tab.id);
+    const stale = [...new Set(tabs.map((c) => c.tabId))].filter((id) => id !== sender.tab.id);
+    if (stale.length) await chrome.tabs.remove(stale);
+    await focusTab({ tabId: sender.tab.id, windowId: sender.tab.windowId });
   });
 });

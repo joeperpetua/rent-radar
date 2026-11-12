@@ -4,14 +4,17 @@ import { onScanChange, scanStatus } from '../core/scan.js';
 
 const STATUS_THROTTLE_MS = 250;
 
+const APP_LOCK = 'rentradar-app';
+
 const ready = new Promise((resolve) => {
-  navigator.locks.request('rentradar-app', { ifAvailable: true }, (lock) => {
-    if (!lock) {
-      chrome.runtime.sendMessage('duplicate-app');
-      return;
-    }
+  const hold = () => {
     resolve(openDb());
     return new Promise(() => {});
+  };
+  navigator.locks.request(APP_LOCK, { ifAvailable: true }, (lock) => {
+    if (lock) return hold();
+    chrome.runtime.sendMessage('duplicate-app');
+    navigator.locks.request(APP_LOCK, hold);
   });
 });
 

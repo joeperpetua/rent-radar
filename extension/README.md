@@ -53,7 +53,7 @@ npm run store -- scan capture compose
 
 ## Landing page
 
-`landing/` is a static page (preview: `landing` in `.claude/launch.json`, port 5181). The content script `src/landing.js` runs only on origins listed under `content_scripts` in the manifest (localhost for now; add the production origin there). It sets `data-rentradar` on `<html>` at `document_start`, so the page knows on load whether the extension is installed. The match is `http://localhost/*` because Firefox ignores ports in match patterns; the script itself only acts on port 5181 for localhost.
+`landing/` is a static page (preview: `landing` in `.claude/launch.json`, port 5181). The content script `src/landing.js` runs only on origins listed under `content_scripts` in the manifest (localhost and the GitHub Pages site `https://joeperpetua.github.io/rent-radar/`). It sets `data-rentradar` on `<html>` at `document_start`, so the page knows on load whether the extension is installed. The match is `http://localhost/*` because Firefox ignores ports in match patterns; the script itself only acts on port 5181 for localhost.
 
 - First install: `runtime.onInstalled` (reason `install`) opens the app tab, so nobody has to come back and reload the landing page. Updates don't open anything.
 - Installed: the page posts `rentradar:open`; the background focuses an open app tab, or navigates the landing tab to the app. Coming back via the back button doesn't reopen it. An *Open RentRadar* button stays as fallback.

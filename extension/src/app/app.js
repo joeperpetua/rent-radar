@@ -1,3 +1,4 @@
+import { onScanStatus as watchScanStatus } from './bridge.js';
 import { applyStatic, getLang, setLang, t } from './i18n.js';
 import { hydrateIcons } from './icons.js';
 import { $ } from './dom.js';
@@ -105,7 +106,7 @@ async function init() {
   state.draft = { ...state.config.defaults };
   state.activeId = state.searches.some((s) => s.id === settings.activeSearchId) ? settings.activeSearchId : state.searches[0]?.id ?? null;
   state.status = await api('status');
-  window.rentradar.onScanStatus(onScanStatus);
+  watchScanStatus(onScanStatus);
   bindEvents();
   document.body.classList.remove('booting');
   state.route = null;

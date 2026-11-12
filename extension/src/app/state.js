@@ -1,3 +1,5 @@
+import { call } from './bridge.js';
+
 export const PAGE_SIZE = 48;
 export const VIEW_DEFAULTS = { sort: 'new', onlyNew: false, onlyMulti: false, onlyDropped: false, q: '' };
 const VIEW_SAVE_DELAY_MS = 400;
@@ -36,7 +38,7 @@ export const state = {
   lightbox: null,
 };
 
-export const api = (method, payload) => window.rentradar.call(method, payload);
+export const api = (method, payload) => call(method, payload);
 
 export function saveView() {
   clearTimeout(state.viewTimer);

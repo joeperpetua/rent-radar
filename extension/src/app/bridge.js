@@ -18,24 +18,25 @@ const ready = new Promise((resolve) => {
   });
 });
 
-window.rentradar = {
-  call: async (method, payload) => {
-    await ready;
-    try {
-      return structuredClone(await dispatch(method, structuredClone(payload)));
-    } catch (err) {
-      console.error(`[api] ${method}:`, err);
-      throw new Error(err.message);
-    }
-  },
-  onScanStatus: (fn) => {
-    let timer = null;
-    return onScanChange(() => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = null;
-        fn(structuredClone(scanStatus()));
-      }, STATUS_THROTTLE_MS);
-    });
-  },
+export const call = async (method, payload) => {
+  await ready;
+  try {
+    return structuredClone(await dispatch(method, structuredClone(payload)));
+  } catch (err) {
+    console.error(`[api] ${method}:`, err);
+    throw new Error(err.message);
+  }
 };
+
+export const onScanStatus = (fn) => {
+  let timer = null;
+  return onScanChange(() => {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      fn(structuredClone(scanStatus()));
+    }, STATUS_THROTTLE_MS);
+  });
+};
+
+window.rentradar = { call, onScanStatus };

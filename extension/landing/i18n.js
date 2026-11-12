@@ -35,6 +35,10 @@ const STRINGS = {
     f3: 'Nur lokal',
     f3d: 'Kein Konto, kein Server. Suchen und Favoriten bleiben in deinem Browser.',
     footer: 'Kontakt zu Anbietern läuft immer über das verlinkte Originalinserat.',
+    privacy: 'Datenschutz',
+    privacyTitle: 'Datenschutz · RentRadar Austria',
+    privacyDescription: 'Datenschutzerklärung von RentRadar Austria.',
+    back: 'Zurück zur Startseite',
   },
   en: {
     description: 'A wide pool of Austrian rental sources in one search. Runs locally in your browser.',
@@ -72,6 +76,10 @@ const STRINGS = {
     f3: 'Local only',
     f3d: 'No account, no server. Searches and favourites stay in your browser.',
     footer: 'Contact with landlords and agents always goes through the linked original listing.',
+    privacy: 'Privacy',
+    privacyTitle: 'Privacy · RentRadar Austria',
+    privacyDescription: 'Privacy policy of RentRadar Austria.',
+    back: 'Back to the start page',
   },
 };
 
@@ -103,7 +111,7 @@ export const t = (key, vars = {}) => STRINGS[lang][key].replace(/\{(\w+)\}/g, (_
 export function applyLang(next = lang) {
   lang = LANGS.includes(next) ? next : lang;
   document.documentElement.lang = lang;
-  document.querySelector('meta[name="description"]').content = t('description');
+  for (const el of document.querySelectorAll('[data-i18n-content]')) el.content = t(el.dataset.i18nContent);
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
   for (const el of document.querySelectorAll('[data-i18n-aria]')) el.setAttribute('aria-label', t(el.dataset.i18nAria));

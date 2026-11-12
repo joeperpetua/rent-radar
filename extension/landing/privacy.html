@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="privacyTitle">Datenschutz · RentRadar Austria</title>
+  <meta name="description" data-i18n-content="privacyDescription" content="Datenschutzerklärung von RentRadar Austria.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="landing.css">
+  <script src="boot.js"></script>
+  <script type="module" src="privacy.js"></script>
+</head>
+<body class="policy-page">
+  <header class="top">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      </span>
+      RentRadar <em>Austria</em>
+    </a>
+    <div class="controls">
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false" data-i18n-aria="darkMode" data-i18n-title="darkMode" aria-label="Dunkelmodus" title="Dunkelmodus">
+        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+      <div class="lang-switch" role="group" id="lang-switch" data-i18n-aria="language" aria-label="Sprache">
+        <button type="button" data-lang="de" lang="de" aria-pressed="true">DE</button>
+        <button type="button" data-lang="en" lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="policy" lang="de">
+      <h1>Datenschutzerklärung</h1>
+      <p class="updated">Stand: 12. November 2026</p>
+
+      <h2>Kurz gesagt</h2>
+      <ul>
+        <li>RentRadar hat kein Konto, keinen eigenen Server, kein Tracking, keine Analyse und keine Werbung.</li>
+        <li>Alles, was die Erweiterung speichert, bleibt in deinem Browser. Wir bekommen davon nichts zu sehen.</li>
+        <li>Daten gehen nur an die Websites, die die Erweiterung für dich abfragt, und an Kartendienste, wenn du eine Karte oder Lagebewertung öffnest.</li>
+      </ul>
+
+      <h2>Geltungsbereich</h2>
+      <p>Diese Erklärung gilt für die Browser-Erweiterung „RentRadar Austria“ (Chrome, Edge, Firefox und andere Browser) und für diese Website.</p>
+
+      <h2>Was in deinem Browser gespeichert wird</h2>
+      <p>Die Erweiterung speichert lokal in deinem Browser (IndexedDB und localStorage der Erweiterung):</p>
+      <ul>
+        <li>deine gespeicherten Suchen und Filter (z. B. Region, Miete, Fläche, Zimmer)</li>
+        <li>die gefundenen Inserate mit ihren öffentlich sichtbaren Angaben (Titel, Preis, Fläche, Adresse, Beschreibung, Fotolinks) und ihrem Preisverlauf</li>
+        <li>ein Protokoll der Scans (wann, welche Quelle, wie viele Treffer, Fehler)</li>
+        <li>deine Favoriten</li>
+        <li>Einstellungen: Design, Hell-/Dunkelmodus, Sprache</li>
+        <li>zwischengespeicherte Ergebnisse der Lagebewertung (30 Tage)</li>
+      </ul>
+      <p>Kontaktdaten von Vermietern oder Maklern (Telefon, E-Mail) werden nicht ausgelesen oder gespeichert. Kontakt läuft immer über das verlinkte Originalinserat.</p>
+      <p>Diese Daten verlassen deinen Browser nicht in Richtung des Entwicklers. Es gibt keine Synchronisierung und keine Sicherung auf einem Server.</p>
+
+      <h2>Verbindungen zu anderen Diensten</h2>
+      <h3>Immobilien-Websites</h3>
+      <p>Wenn du einen Scan startest, ruft die Erweiterung die öffentlichen Suchergebnisse und Inseratsseiten der ausgewählten Quellen direkt aus deinem Browser ab, so wie beim normalen Besuch der Website. Die Anfragen enthalten nur deine Suchkriterien. Die jeweiligen Websites sehen dabei deine IP-Adresse und die Kennung deines Browsers und können Cookies erhalten, die dein Browser für sie gespeichert hat. Beim Ansehen eines Inserats werden Fotos von den Servern der Website geladen. Es gelten die Datenschutzerklärungen der jeweiligen Website.</p>
+      <p>Gescannt wird nur, wenn du es auslöst, nie im Hintergrund oder nach Zeitplan.</p>
+
+      <h3>Karte im Inserat</h3>
+      <p>Hat ein Inserat Koordinaten, zeigt die Detailansicht eine eingebettete Karte von OpenStreetMap. Dabei erhält die OpenStreetMap Foundation deine IP-Adresse und den angezeigten Kartenausschnitt. Der Link „In Google Maps öffnen“ überträgt die Adresse erst, wenn du ihn anklickst.</p>
+
+      <h3>KI-Lagebewertung (nur auf Klick)</h3>
+      <p>Startest du die Lagebewertung, werden die Koordinaten des Inserats an einen öffentlichen Overpass-Server gesendet, um Haltestellen, Geschäfte und Grünflächen in der Nähe abzufragen. Verwendet wird overpass-api.de, ist dieser nicht erreichbar, overpass.private.coffee. Gesendet werden nur die Koordinaten, keine Angaben über dich, aber der Server sieht deine IP-Adresse. Die Bewertung selbst erstellt das in Chrome eingebaute KI-Modell direkt auf deinem Gerät.</p>
+
+      <h3>Übersetzung</h3>
+      <p>Die Übersetzung von Inseratstexten nutzt die in Chrome eingebaute Übersetzungsfunktion und läuft auf deinem Gerät. Sprachpakete und das KI-Modell lädt Chrome selbst von Google herunter. Dafür gelten die Bedingungen von Google Chrome.</p>
+
+      <h2>Berechtigungen</h2>
+      <ul>
+        <li><b>Zugriff auf bestimmte Websites:</b> nur auf die Domains der unterstützten Immobilienquellen und der beiden Overpass-Server. Dein Browser zeigt die vollständige Liste bei der Installation. Die Berechtigung wird nur für Anfragen an diese Seiten verwendet. Die Erweiterung läuft nicht auf Seiten, die du besuchst, und liest oder verändert sie nicht.</li>
+        <li><b>Unbegrenzter Speicher:</b> verhindert, dass der Browser deine Suchen und Inserate bei Platzmangel löscht.</li>
+        <li><b>Inhaltsskript auf dieser Website:</b> meldet nur, dass die Erweiterung installiert ist, damit diese Seite sie öffnen kann.</li>
+      </ul>
+
+      <h2>Speicherdauer und Löschen</h2>
+      <ul>
+        <li>Inserate, die bei einer Suche nicht mehr gefunden werden, werden nach 90 Tagen entfernt. Inserate, die zu keiner Suche mehr gehören, werden gelöscht.</li>
+        <li>In den Einstellungen siehst du, wie viel Speicher belegt ist, und kannst veraltete Inserate entfernen oder alles löschen.</li>
+        <li>Wenn du die Erweiterung deinstallierst, löscht der Browser alle ihre Daten.</li>
+      </ul>
+
+      <h2>Diese Website</h2>
+      <p>Diese Website setzt keine Cookies und verwendet keine Analyse-Tools. Sprache und Hell-/Dunkelmodus werden im localStorage deines Browsers gespeichert. Schriftarten und alle anderen Dateien kommen von diesem Server, es werden keine Inhalte von Dritten geladen. Der Webhoster kann technische Zugriffsdaten (IP-Adresse, Zeitpunkt, aufgerufene Seite) für Betrieb und Sicherheit protokollieren.</p>
+
+      <h2>Deine Rechte</h2>
+      <p>Da der Entwickler keine Daten über dich erhält, gibt es bei uns nichts zum Auskunft geben, Berichtigen oder Löschen: Du hast alle Daten selbst in der Hand. Gegenüber den oben genannten Diensten hast du die Rechte nach der DSGVO (Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch, Datenübertragbarkeit). Du kannst dich bei der österreichischen Datenschutzbehörde (dsb.gv.at) beschweren.</p>
+
+      <h2>Änderungen</h2>
+      <p>Ändert sich, wie die Erweiterung mit Daten umgeht, wird diese Seite aktualisiert und das Datum oben angepasst.</p>
+
+      <h2>Kontakt</h2>
+      <p>Fragen zum Datenschutz bitte über die Support-Funktion auf der Store-Seite der Erweiterung.</p>
+    </article>
+
+    <article class="policy" lang="en">
+      <h1>Privacy policy</h1>
+      <p class="updated">Last updated: 12 November 2026</p>
+
+      <h2>In short</h2>
+      <ul>
+        <li>RentRadar has no account, no server of its own, no tracking, no analytics and no ads.</li>
+        <li>Everything the extension stores stays in your browser. We never see any of it.</li>
+        <li>Data only goes to the websites the extension queries for you, and to map services when you open a map or a location rating.</li>
+      </ul>
+
+      <h2>Scope</h2>
+      <p>This policy covers the "RentRadar Austria" browser extension (Chrome, Edge, Firefox and other browsers) and this website.</p>
+
+      <h2>What is stored in your browser</h2>
+      <p>The extension stores the following locally in your browser (the extension's IndexedDB and localStorage):</p>
+      <ul>
+        <li>your saved searches and filters (e.g. region, rent, size, rooms)</li>
+        <li>the listings found, with their publicly visible details (title, price, size, address, description, photo links) and their price history</li>
+        <li>a log of scans (when, which source, how many results, errors)</li>
+        <li>your favourites</li>
+        <li>settings: style, light/dark mode, language</li>
+        <li>cached location ratings (30 days)</li>
+      </ul>
+      <p>Contact details of landlords or agents (phone, email) are not read or stored. Contact always goes through the linked original listing.</p>
+      <p>None of this data is sent to the developer. There is no sync and no server backup.</p>
+
+      <h2>Connections to other services</h2>
+      <h3>Property websites</h3>
+      <p>When you start a scan, the extension requests the public search results and listing pages of the sources you selected directly from your browser, just like visiting the website yourself. The requests contain only your search criteria. Each website sees your IP address and browser identifier and may receive cookies your browser holds for it. Photos are loaded from the website's servers when you view a listing. Each website's own privacy policy applies.</p>
+      <p>Scans run only when you start them, never in the background or on a schedule.</p>
+
+      <h3>Map in the listing view</h3>
+      <p>If a listing has coordinates, the detail view shows an embedded OpenStreetMap map. The OpenStreetMap Foundation receives your IP address and the map area shown. The "Open in Google Maps" link only sends the address when you click it.</p>
+
+      <h3>AI location rating (on click only)</h3>
+      <p>When you start a location rating, the listing's coordinates are sent to a public Overpass server to look up nearby stops, shops and green space. It uses overpass-api.de, and overpass.private.coffee if that is unreachable. Only the coordinates are sent, nothing about you, but the server sees your IP address. The rating itself is made by Chrome's built-in AI model on your device.</p>
+
+      <h3>Translation</h3>
+      <p>Translating listing texts uses Chrome's built-in translator and runs on your device. Chrome downloads language packs and the AI model from Google itself. Google Chrome's terms apply to that.</p>
+
+      <h2>Permissions</h2>
+      <ul>
+        <li><b>Access to specific websites:</b> only the domains of the supported property sources and the two Overpass servers. Your browser shows the full list on install. The permission is used only for requests to those sites. The extension does not run on, read or change pages you visit.</li>
+        <li><b>Unlimited storage:</b> keeps the browser from deleting your searches and listings when disk space runs low.</li>
+        <li><b>Content script on this website:</b> only signals that the extension is installed, so this page can open it.</li>
+      </ul>
+
+      <h2>Retention and deletion</h2>
+      <ul>
+        <li>Listings a search no longer finds are removed after 90 days. Listings no search refers to are deleted.</li>
+        <li>Settings show how much storage is used and let you remove outdated listings or clear everything.</li>
+        <li>Uninstalling the extension makes the browser delete all of its data.</li>
+      </ul>
+
+      <h2>This website</h2>
+      <p>This website sets no cookies and uses no analytics. Language and light/dark mode are kept in your browser's localStorage. Fonts and all other files come from this server; nothing is loaded from third parties. The web host may log technical access data (IP address, time, page requested) for operation and security.</p>
+
+      <h2>Your rights</h2>
+      <p>The developer receives no data about you, so there is nothing for us to disclose, correct or delete: you hold all of it yourself. Towards the services named above you have your rights under the GDPR (access, rectification, erasure, restriction, objection, portability). You can lodge a complaint with the Austrian Data Protection Authority (dsb.gv.at).</p>
+
+      <h2>Changes</h2>
+      <p>If the way the extension handles data changes, this page is updated and the date above adjusted.</p>
+
+      <h2>Contact</h2>
+      <p>For privacy questions, use the support option on the extension's store page.</p>
+    </article>
+  </main>
+
+  <footer><a href="./" data-i18n="back">Zurück zur Startseite</a></footer>
+</body>
+</html>

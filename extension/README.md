@@ -60,6 +60,8 @@ npm run store -- scan capture compose
 - Not installed: install guides from `landing/guides.js`, picked by platform, each with a button to its store listing. Desktop: Chrome/Edge/Brave (Chrome Web Store) and Firefox (AMO). Android: Kiwi, Quetta, Vivaldi 8.2+ (Chrome Web Store) and Firefox 128+ (AMO). iOS: Orion (AMO, after turning on Firefox extension support). The guide for the current browser is preselected; a desktop browser that can't run it (Safari, old versions) gets a warning above the guides.
 - Extension reloaded or removed while the page was open: the content script answers `rentradar:stale` and the page asks for a reload.
 - Text is in `landing/i18n.js` (DE/EN, switch in the header, remembered in `localStorage`).
+- The landing page loads nothing from third parties; Plus Jakarta Sans is served from `landing/fonts/` (copied from `src/app/fonts/`).
+- `landing/privacy.html` is the privacy policy (DE and EN side by side, the inactive language hidden), linked from the footer. Its URL goes into the privacy field of both store listings. Update it whenever the extension starts talking to a new kind of service.
 - The sun/moon button in the header flips light/dark. It follows the system until clicked, then the choice is kept in `localStorage` and `landing/boot.js` applies it before first paint.
 - `landing/radar.js` runs the scan radar from the app as a fixed backdrop: right side on wide screens, faded behind the header below 1100px. Blips are placed at random and pop as the sweep passes them, three more per sweep up to 28.
 
@@ -96,7 +98,7 @@ Inspect or clear the data in DevTools on the app tab → Application → Indexed
 ## Layout
 
 ```
-src/manifest.json   MV3 manifest, host permissions for willhaben, ImmoScout24 and https://*/*
+src/manifest.json   MV3 manifest, host permissions per source domain plus the Overpass servers (test/hosts.test.js checks coverage)
 src/background.js   toolbar click or landing page → open/focus the app tab; closes duplicate app tabs (no `windows` API on Android is fine)
 src/landing.js      content script on the landing page: install marker + open request
 src/core/           db.js (IndexedDB), api.js, scan.js, prefs, dedup, categories, geo, http, sources/*

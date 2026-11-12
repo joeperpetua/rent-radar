@@ -37,6 +37,20 @@ npm run build:firefox
 
 The store links live in `STORES` in `landing/guides.js`. They point to store searches for "RentRadar Austria" until the listings exist; swap in the listing URLs once published.
 
+## Store images
+
+```bash
+npm run store -- scan capture compose
+```
+
+`scripts/store/run.mjs` starts a headless Chrome with its own profile in `store/.profile/`, loads `src/` over CDP (`Extensions.loadUnpacked`, so branded Chrome works) and runs the given steps. Without steps it runs `capture compose`.
+
+- **scan**: creates three demo searches (Vienna, Graz, Salzburg) in a fresh profile and scans the real portals; later runs rescan them.
+- **capture**: raw app screenshots at 2× (phone 3×) into `store/raw/`. The scan radar comes from a live scan of a temporary Innsbruck search that is deleted afterwards.
+- **compose**: captions and frames from `scripts/store/copy.mjs` and `template.html`, rendered to `store/<lang>/`: seven 1280×800 screenshots, the 440×280 small promo tile and the 1400×560 marquee. Also renders `src/app/favicon.svg` to `store/icon-128.png` (96px artwork with 16px transparent padding, the Chrome Web Store icon spec) and `store/icon-512.png`.
+
+`--lang en,de` picks languages, `--only list,radar` (shots) or `--only 01-search,tile` (slides) limits a step. `CHROME` overrides the browser path. The Chrome Web Store takes five screenshots (01–05), AMO takes all seven.
+
 ## Landing page
 
 `landing/` is a static page (preview: `landing` in `.claude/launch.json`, port 5181). The content script `src/landing.js` runs only on origins listed under `content_scripts` in the manifest (localhost for now; add the production origin there). It sets `data-rentradar` on `<html>` at `document_start`, so the page knows on load whether the extension is installed. The match is `http://localhost/*` because Firefox ignores ports in match patterns; the script itself only acts on port 5181 for localhost.
@@ -89,6 +103,8 @@ src/core/           db.js (IndexedDB), api.js, scan.js, prefs, dedup, categories
 src/app/            UI + bridge.js
 landing/            static landing page, not part of the extension
 scripts/build.js    per-browser dist/ + store upload zips (zip.js is the zip writer)
+scripts/store/      store screenshots and promo tiles from real scans
+store/              generated store images per language; raw/ and .profile/ gitignored
 dist/               build output, gitignored
 ```
 

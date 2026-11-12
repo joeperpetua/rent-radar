@@ -9,6 +9,7 @@ const UNRELIABLE_AREA_SOURCES = new Set();
 const NET_RENT_SOURCES = new Set();
 const NET_TO_GROSS_RATIO = [0.6, 0.88];
 const HARD_CONFLICT = -Infinity;
+const MAX_TITLE_SCORE = 5;
 
 const STOPWORDS = new Set([
   'und', 'mit', 'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer', 'im', 'in', 'zu', 'zur', 'zum',
@@ -144,12 +145,11 @@ function editDistanceAtMostOne(a, b) {
 }
 
 function titleSimilarity(a, b, idf) {
-  const bSet = new Set(b._tokens);
   const unmatchedB = new Set(b._tokens);
   let shared = 0;
   let onlyA = 0;
   for (const t of a._tokens) {
-    if (bSet.has(t)) {
+    if (b._tokenSet.has(t)) {
       shared += idf(t);
       unmatchedB.delete(t);
       continue;
@@ -180,13 +180,17 @@ function templateTitles(items) {
 }
 
 function prepare(listings) {
-  const items = listings.map((l) => ({ ...l, _tokens: titleTokens(l.title), _street: streetOf(l.address), _agency: agencyTokens(l.agency) }));
+  const items = listings.map((l) => {
+    const tokens = titleTokens(l.title);
+    return { ...l, _tokens: tokens, _tokenSet: new Set(tokens), _street: streetOf(l.address), _agency: agencyTokens(l.agency) };
+  });
   const templates = templateTitles(items);
   for (const item of items) item._template = templates.has(titleKey(item.title));
   const df = new Map();
   for (const item of items) for (const t of item._tokens) df.set(t, (df.get(t) ?? 0) + 1);
   const n = items.length;
-  const idf = (t) => Math.log((n + 1) / ((df.get(t) ?? 0) + 1)) + 1;
+  const weights = new Map([...df].map(([t, count]) => [t, Math.log((n + 1) / (count + 1)) + 1]));
+  const idf = (t) => weights.get(t) ?? Math.log(n + 1) + 1;
   return { items, idf };
 }
 
@@ -198,13 +202,9 @@ export function compare(a, b, idf) {
   const distance = precise ? haversineMeters(a, b) : null;
   if (distance != null && distance > MAX_PRECISE_DISTANCE_M) return HARD_CONFLICT;
 
-  const { sim, info } = titleSimilarity(a, b, idf);
-  const titleConfirmed = sim >= 0.9 && info >= 0.8;
-  let score = 5 * sim * info;
-
   const areaUnreliable = UNRELIABLE_AREA_SOURCES.has(a.source) || UNRELIABLE_AREA_SOURCES.has(b.source);
   const areaDiff = a.area != null && b.area != null ? Math.abs(a.area - b.area) : null;
-  if (areaDiff != null) score += areaDiff <= 0.6 ? 2.5 : areaDiff <= 2 ? 1.5 : areaDiff <= 5 || areaUnreliable ? 0 : -2;
+  const areaScore = areaDiff == null ? 0 : areaDiff <= 0.6 ? 2.5 : areaDiff <= 2 ? 1.5 : areaDiff <= 5 || areaUnreliable ? 0 : -2;
 
   const sameSource = a.source === b.source;
   const hasPrices = a.price != null && b.price != null;
@@ -212,34 +212,46 @@ export function compare(a, b, idf) {
   const priceRel = hasPrices ? priceAbs / Math.max(a.price, b.price) : 0;
   const priceMatches = priceAbs <= 1 || priceRel <= 0.005;
   const ratio = hasPrices ? Math.min(a.price, b.price) / Math.max(a.price, b.price) : 1;
-  const netVsGross = hasPrices && titleConfirmed
+  const netCandidate = hasPrices
     && (NET_RENT_SOURCES.has(a.source) || NET_RENT_SOURCES.has(b.source))
     && ratio >= NET_TO_GROSS_RATIO[0] && ratio <= NET_TO_GROSS_RATIO[1]
     && ((areaDiff != null && areaDiff <= 2) || (sameSource && areaUnreliable));
-  if (hasPrices) {
-    const round = a.price % 50 === 0 && b.price % 50 === 0;
-    score += priceAbs <= 1 ? (round ? 2 : 3)
+  const round = hasPrices && a.price % 50 === 0 && b.price % 50 === 0;
+  const priceScore = (confirmed) => (!hasPrices ? 0
+    : priceAbs <= 1 ? (round ? 2 : 3)
       : priceRel <= 0.005 ? 2
         : priceRel <= 0.03 ? 1
-          : netVsGross ? 0
-            : priceRel <= 0.1 ? (titleConfirmed ? 0 : -1)
-              : -2;
+          : netCandidate && confirmed ? 0
+            : priceRel <= 0.1 ? (confirmed ? 0 : -1)
+              : -2);
+
+  const streetScore = a._street && b._street ? (streetsMatch(a._street, b._street) ? 1.5 : -4) : 0;
+  const nearScore = distance != null && distance < 150 ? 1 : 0;
+  const agencyScore = [...a._agency].some((t) => b._agency.has(t)) ? 1 : 0;
+  const postcodeScore = !a.postcode || !b.postcode ? -1 : 0;
+  const roomScore = roomDiff > 0.5 ? -2.5 : 0;
+
+  const best = MAX_TITLE_SCORE + areaScore + priceScore(true) + streetScore + nearScore + agencyScore + postcodeScore + roomScore;
+  if (best < CROSS_SOURCE_THRESHOLD) return best;
+  if ((a._template || b._template) && !priceMatches) return CROSS_SOURCE_THRESHOLD - 1;
+  if (sameSource && (!(areaUnreliable || (areaDiff != null && areaDiff <= 1)) || roomDiff > 0.5 || !(priceMatches || netCandidate))) {
+    return CROSS_SOURCE_THRESHOLD - 1;
   }
 
-  if (a._street && b._street) score += streetsMatch(a._street, b._street) ? 1.5 : -4;
-  if (distance != null && distance < 150) score += 1;
-  if ([...a._agency].some((t) => b._agency.has(t))) score += 1;
-  if (!a.postcode || !b.postcode) score -= 1;
-  if (roomDiff > 0.5) score -= 2.5;
+  const { sim, info } = titleSimilarity(a, b, idf);
+  const titleConfirmed = sim >= 0.9 && info >= 0.8;
+  const netVsGross = netCandidate && titleConfirmed;
+  let score = MAX_TITLE_SCORE * sim * info;
+  if (areaDiff != null) score += areaScore;
+  if (hasPrices) score += priceScore(titleConfirmed);
+  if (a._street && b._street) score += streetScore;
+  if (nearScore) score += nearScore;
+  if (agencyScore) score += agencyScore;
+  if (postcodeScore) score += postcodeScore;
+  if (roomScore) score += roomScore;
 
   const capped = Math.min(score, CROSS_SOURCE_THRESHOLD - 1);
-  if ((a._template || b._template) && !priceMatches) return capped;
-  if (sameSource) {
-    const sameUnit = areaUnreliable || (areaDiff != null && areaDiff <= 1);
-    const sameRooms = roomDiff <= 0.5;
-    const samePrice = priceMatches || netVsGross;
-    if (!titleConfirmed || !sameUnit || !sameRooms || !samePrice) return capped;
-  }
+  if (sameSource && (!titleConfirmed || !(priceMatches || netVsGross))) return capped;
   return score;
 }
 
@@ -306,14 +318,18 @@ function buildGroup(members) {
   };
 }
 
-export function dedupe(listings) {
+export function clusters(listings) {
   const { items, idf } = prepare(listings);
   const n = items.length;
   const memo = new Map();
   const score = (i, j) => {
     const key = i < j ? i * n + j : j * n + i;
-    if (!memo.has(key)) memo.set(key, compare(items[i], items[j], idf));
-    return memo.get(key);
+    let s = memo.get(key);
+    if (s === undefined) {
+      s = compare(items[i], items[j], idf);
+      memo.set(key, s);
+    }
+    return s;
   };
 
   const byPostcode = new Map();
@@ -326,7 +342,7 @@ export function dedupe(listings) {
 
   const pairs = [];
   const consider = (i, j) => {
-    const s = score(i, j);
+    const s = compare(items[i], items[j], idf);
     if (s >= thresholdFor(items[i], items[j])) pairs.push([s, i, j]);
   };
   for (const [key, members] of byPostcode) {
@@ -353,6 +369,9 @@ export function dedupe(listings) {
     cluster[cj] = [];
   }
 
-  const strip = ({ _tokens, _street, _agency, _template, ...listing }) => listing;
-  return cluster.filter((c) => c.length).map((c) => buildGroup(c.map((i) => strip(items[i]))));
+  return cluster.filter((c) => c.length);
 }
+
+export const groupsFromClusters = (listings, found) => found.map((c) => buildGroup(c.map((i) => listings[i])));
+
+export const dedupe = (listings) => groupsFromClusters(listings, clusters(listings));

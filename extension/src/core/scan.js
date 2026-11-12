@@ -1,10 +1,11 @@
 import { SOURCES } from './sources/index.js';
-import { dedupe } from './dedup.js';
-import { CATEGORIES, groupCategories, passesCategories } from './categories.js';
+import { CATEGORIES, passesCategories } from './categories.js';
+import { cachedGroups } from './groups.js';
 import { effectivePrefs, isScannable, scrapeScope } from './prefs.js';
-import { dataVersion, getChangedPriceHistories, getRuns, getSearch, getStoredListings, initialScanAt, queryListings, queryRemovedListings, saveScan, saveSourceResult } from './db.js';
+import { dataVersion, getRuns, getSearch, getStoredListings, initialScanAt, saveScan, saveSourceResult } from './db.js';
 
 export { SOURCES };
+export { relatedHistory } from './groups.js';
 
 const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GROUP_CACHE_SIZE = 16;
@@ -101,57 +102,61 @@ export function cancelQueued(searchId) {
   notify();
 }
 
+const pendingGroups = new Map();
+let groupsWorker = null;
+let nextRequest = 0;
+
+function spawnGroupsWorker() {
+  if (groupsWorker !== null) return groupsWorker;
+  const fail = () => {
+    groupsWorker?.terminate();
+    groupsWorker = false;
+    for (const { resolve, run } of pendingGroups.values()) resolve(run());
+    pendingGroups.clear();
+  };
+  try {
+    groupsWorker = new Worker(new URL('./groupsWorker.js', import.meta.url), { type: 'module' });
+    groupsWorker.onmessage = ({ data }) => {
+      const request = pendingGroups.get(data.id);
+      pendingGroups.delete(data.id);
+      request?.resolve(data.error ? request.run() : data.result);
+    };
+    groupsWorker.onerror = fail;
+    groupsWorker.onmessageerror = fail;
+  } catch {
+    groupsWorker = false;
+  }
+  return groupsWorker;
+}
+
+function groupsOf(search, version) {
+  const prefs = { ...effectivePrefs(search.prefs), districts: null };
+  const persist = !isBusy(search.id);
+  const run = () => cachedGroups(search.id, prefs, version, persist);
+  const worker = typeof Worker === 'function' && spawnGroupsWorker();
+  if (!worker) return run();
+  const id = nextRequest++;
+  return new Promise((resolve) => {
+    pendingGroups.set(id, { resolve, run });
+    worker.postMessage({ id, searchId: search.id, prefs, version, persist });
+  });
+}
+
 async function dedupedGroups(search) {
   const version = await dataVersion();
   const key = String(search.id);
   let entry = groupCache.get(key);
   if (entry?.version !== version) {
-    const prefs = { ...effectivePrefs(search.prefs), districts: null };
-    const listings = await queryListings(search.id, prefs);
-    const removed = await queryRemovedListings(search.id, prefs);
-    entry = {
-      version,
-      groups: dedupe(listings),
-      byId: new Map(listings.map((l) => [l.id, l])),
-      related: relatedHistory(listings, removed),
-      histories: await getChangedPriceHistories(search.id),
-    };
+    entry = { version, data: groupsOf(search, version) };
+    const failed = entry;
+    entry.data.catch(() => {
+      if (groupCache.get(key) === failed) groupCache.delete(key);
+    });
   }
   groupCache.delete(key);
   groupCache.set(key, entry);
   if (groupCache.size > GROUP_CACHE_SIZE) groupCache.delete(groupCache.keys().next().value);
-  return entry;
-}
-
-function priceChange(group, histories) {
-  for (const s of group.sources) {
-    const history = histories.get(s.id);
-    if (!history || history.at(-1).price !== s.price) continue;
-    const previous = history.at(-2).price;
-    const current = history.at(-1).price;
-    return {
-      source: s.source,
-      previous,
-      current,
-      delta: Math.round((current - previous) * 100) / 100,
-      pct: Math.round(((current - previous) / previous) * 1000) / 10,
-      at: history.at(-1).at,
-    };
-  }
-  return null;
-}
-
-export function relatedHistory(listings, removed) {
-  const related = new Map();
-  if (!removed.length) return related;
-  const everything = [...listings, ...removed];
-  const byId = new Map(everything.map((l) => [l.id, l]));
-  for (const g of dedupe(everything)) {
-    const all = g.sources.map((s) => byId.get(s.id)).filter(Boolean);
-    if (!all.some((l) => l.removed)) continue;
-    for (const l of all) if (!l.removed) related.set(l.id, all);
-  }
-  return related;
+  return entry.data;
 }
 
 export function listedAt(members, initialAt) {
@@ -174,19 +179,11 @@ export async function buildView(search) {
   const now = Date.now();
   const prefs = effectivePrefs(search.prefs);
   const initialAt = await initialScanAt(search.id);
-  const { groups: cached, byId, related, histories } = await dedupedGroups(search);
-  const inDistricts = cached.filter((g) => g.price != null && g.price > 0 && (prefs.districts == null || !prefs.districts.length || g.state !== 'wien' || prefs.districts.includes(g.district)));
-  const all = inDistricts.map((g) => {
-    const members = g.sources.map((s) => byId.get(s.id));
-    const listed = listedAt([...members, ...members.flatMap((m) => related.get(m?.id) ?? [])], initialAt);
-    return {
-      ...g,
-      sources: g.sources.map((s) => ({ ...s, priceHistory: histories.get(s.id) ?? null })),
-      categories: groupCategories(members),
-      isNew: isNew(listed, now),
-      listedAt: listed,
-      priceChange: priceChange(g, histories),
-    };
+  const cached = await dedupedGroups(search);
+  const inDistricts = cached.filter(({ group: g }) => g.price != null && g.price > 0 && (prefs.districts == null || !prefs.districts.length || g.state !== 'wien' || prefs.districts.includes(g.district)));
+  const all = inDistricts.map(({ group, history }) => {
+    const listed = listedAt(history, initialAt);
+    return { ...group, isNew: isNew(listed, now), listedAt: listed };
   });
   const categoryCounts = Object.fromEntries(CATEGORIES.map((c) => [c, all.filter((g) => g.categories.includes(c)).length]));
   const groups = all.filter((g) => passesCategories(g.categories, prefs.categories));

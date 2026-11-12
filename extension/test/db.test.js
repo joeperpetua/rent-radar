@@ -124,3 +124,15 @@ test('legacy and per-broker listing ids map onto the Immo source', async () => {
   assert.equal(migrateListingId('immo:immocontract:42'), null);
   assert.equal(migrateListingId('willhaben:123'), null);
 });
+
+test('grouped results are stored per data version and dropped with the search', async () => {
+  const search = await db.createSearch('Cache', prefs);
+  await scan(search, '2026-04-01T00:00:00.000Z', [{ key: 'willhaben', listings: [listing('cache1'), listing('cache2', { price: 1400, area: 90 })], ms: 1 }]);
+  const view = await buildView(await db.getSearch(search.id));
+  const stored = await db.getGroupCache(search.id);
+  assert.equal(stored.version, await db.dataVersion());
+  assert.deepEqual(stored.groups.map((g) => g.group.id).sort(), view.groups.map((g) => g.id).sort());
+
+  await db.deleteSearch(search.id);
+  assert.equal(await db.getGroupCache(search.id), null);
+});

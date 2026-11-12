@@ -197,9 +197,21 @@ async function purgeOrphans(t) {
   }
 }
 
+const groupCacheKey = (searchId) => `groups:${searchId}`;
+
+export async function getGroupCache(searchId) {
+  const row = await read(META, async (t) => req(t.objectStore(META).get(groupCacheKey(searchId))));
+  return row?.value ?? null;
+}
+
+export const putGroupCache = (searchId, value) => write(META, async (t) => {
+  await req(t.objectStore(META).put({ key: groupCacheKey(searchId), value }));
+});
+
 export function deleteSearch(id) {
   return write([SEARCHES, META], async (t) => {
     t.objectStore(SEARCHES).delete(id);
+    t.objectStore(META).delete(groupCacheKey(id));
     await bumpVersion(t);
   });
 }
@@ -309,18 +321,33 @@ async function memberListings(t, searchId, filter = () => true) {
   return rows.filter((r) => r.l);
 }
 
+const activeRow = ({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen });
+const removedRow = ({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen, removed: true });
+const keepsRemoved = (l, prefs) => prefs.sources.includes(l.source) && prefs.types.includes(l.type) && !l.data?.forSale;
+
 export const queryListings = (searchId, prefs) => read([MEMBERS, LISTINGS], async (t) => {
   const rows = await memberListings(t, searchId, (m) => !m.removedAt);
-  return rows
-    .filter(({ l }) => matches(l, prefs))
-    .map(({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen }));
+  return rows.filter(({ l }) => matches(l, prefs)).map(activeRow);
 });
 
 export const queryRemovedListings = (searchId, prefs) => read([MEMBERS, LISTINGS], async (t) => {
   const rows = await memberListings(t, searchId, (m) => m.removedAt);
-  return rows
-    .filter(({ l }) => prefs.sources.includes(l.source) && prefs.types.includes(l.type) && !l.data?.forSale)
-    .map(({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen, removed: true }));
+  return rows.filter(({ l }) => keepsRemoved(l, prefs)).map(removedRow);
+});
+
+export const querySearchListings = (searchId, prefs) => read([MEMBERS, LISTINGS], async (t) => {
+  const listings = [];
+  const removed = [];
+  const histories = new Map();
+  for (const row of await memberListings(t, searchId)) {
+    if (row.l.prices.length > 1) histories.set(row.l.id, row.l.prices);
+    if (!row.m.removedAt) {
+      if (matches(row.l, prefs)) listings.push(activeRow(row));
+    } else if (keepsRemoved(row.l, prefs)) {
+      removed.push(removedRow(row));
+    }
+  }
+  return { listings, removed, histories };
 });
 
 const scansOf = (searchId) => read(SCANS, async (t) => {
@@ -354,14 +381,6 @@ export async function initialScanAt(searchId) {
 }
 
 export const getPriceHistory = (id) => read(LISTINGS, async (t) => (await req(t.objectStore(LISTINGS).get(id)))?.prices ?? []);
-
-export const getChangedPriceHistories = (searchId) => read([MEMBERS, LISTINGS], async (t) => {
-  const histories = new Map();
-  for (const { l } of await memberListings(t, searchId)) {
-    if (l.prices.length > 1) histories.set(l.id, l.prices);
-  }
-  return histories;
-});
 
 export const getStoredListings = (source) => read(LISTINGS, async (t) => {
   const rows = await req(t.objectStore(LISTINGS).index('source').getAll(source));

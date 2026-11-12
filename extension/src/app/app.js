@@ -22,6 +22,8 @@ const RADAR_TICK_MS = 1000;
 const MAX_BLIPS_PER_SOURCE = 12;
 const LISTINGS_PER_BLIP = 25;
 const MAX_STAGGER = 14;
+const PAGE_SIZE = 48;
+const PAGE_MARGIN_PX = 1200;
 const PULL_TRIGGER = 72;
 const PULL_MAX = 110;
 const PULL_RESISTANCE = 0.5;
@@ -54,6 +56,7 @@ const state = {
   favToken: 0,
   favSelected: null,
   statusHtml: '',
+  listLimit: PAGE_SIZE,
 };
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -73,8 +76,22 @@ function saveView() {
 }
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const euro = (n, digits = 0) => (n == null ? '–' : new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR', maximumFractionDigits: digits, minimumFractionDigits: digits }).format(n));
-const num = (n, digits = 0) => (n == null ? '–' : new Intl.NumberFormat(locale(), { maximumFractionDigits: digits }).format(n));
+const formatters = new Map();
+
+function formatter(digits, currency) {
+  const key = `${locale()}|${digits}|${currency}`;
+  let f = formatters.get(key);
+  if (!f) {
+    f = new Intl.NumberFormat(locale(), currency
+      ? { style: 'currency', currency: 'EUR', maximumFractionDigits: digits, minimumFractionDigits: digits }
+      : { maximumFractionDigits: digits });
+    formatters.set(key, f);
+  }
+  return f;
+}
+
+const euro = (n, digits = 0) => (n == null ? '–' : formatter(digits, true).format(n));
+const num = (n, digits = 0) => (n == null ? '–' : formatter(digits, false).format(n));
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short' }) : '–');
 const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) : '–');
 const isDrop = (g) => g.priceChange != null && g.priceChange.delta < 0;
@@ -474,8 +491,12 @@ function dismissToast(key) {
   setTimeout(() => el.remove(), 250);
 }
 
+let filterCache = { data: null, key: '', groups: [] };
+
 function filteredGroups() {
   const v = state.view;
+  const key = JSON.stringify([v, getLang()]);
+  if (filterCache.data === state.data && filterCache.key === key) return filterCache.groups;
   const q = v.q.trim().toLowerCase();
   const groups = (state.data?.groups ?? []).filter((g) => {
     if (v.onlyNew && !g.isNew) return false;
@@ -496,7 +517,8 @@ function filteredGroups() {
     'drop': (a, b) => (isDrop(a) ? a.priceChange.pct : 0) - (isDrop(b) ? b.priceChange.pct : 0)
       || (b.priceChange?.at ?? '').localeCompare(a.priceChange?.at ?? ''),
   }[v.sort] ?? (() => 0);
-  return groups.sort(by);
+  filterCache = { data: state.data, key, groups: groups.sort(by) };
+  return filterCache.groups;
 }
 
 function sourceChips(g) {
@@ -519,9 +541,20 @@ function sourceChips(g) {
   }).join('');
 }
 
+const cardHtmlCache = new WeakMap();
+
 function cardHtml(g) {
-  const img = g.images[0];
   const fav = isFav(g);
+  const key = `${fav}|${getLang()}`;
+  const hit = cardHtmlCache.get(g);
+  if (hit?.key === key) return hit.html;
+  const html = buildCardHtml(g, fav);
+  cardHtmlCache.set(g, { key, html });
+  return html;
+}
+
+function buildCardHtml(g, fav) {
+  const img = g.images[0];
   const dropped = isDrop(g);
   const area = g.area ? `${num(g.area, 1)} m²` : '';
   const sqm = g.pricePerSqm ? `${euro(g.pricePerSqm, 2)}/m²` : '';
@@ -570,17 +603,31 @@ function cardHtml(g) {
 function emptyState() {
   const search = activeSearch();
   if (!search) return state.searches.length ? ['search', t('emptyPick')] : ['bookmark-plus', t('emptyStart')];
+  if (state.data?.searchId !== search.id) return ['loader-circle', t('loading'), 'spin'];
   const busy = isScanning(search.id) || isQueued(search.id);
   if (!search.lastScanAt) return ['radar', busy ? t('emptyRunning') : t('emptyNoData')];
   return busy ? ['radar', t('emptyRunning')] : ['search-x', t('emptyFilters')];
 }
 
+function fitLoading(el) {
+  if (el.hidden || !el.classList.contains('loading')) {
+    el.style.minHeight = '';
+    return;
+  }
+  const nav = $('#bottom-nav');
+  const bottom = nav.checkVisibility() ? nav.getBoundingClientRect().top : window.innerHeight;
+  const padding = parseFloat(getComputedStyle($('.layout')).paddingBottom) || 0;
+  el.style.minHeight = `${Math.max(160, Math.floor(bottom - el.getBoundingClientRect().top - padding))}px`;
+}
+
 function renderEmpty(el) {
-  const [name, text] = emptyState();
+  const [name, text, extra = ''] = emptyState();
+  el.classList.toggle('loading', extra === 'spin');
+  fitLoading(el);
   const key = `${name}|${text}`;
   if (el.dataset.key === key) return;
   el.dataset.key = key;
-  el.innerHTML = `${icon(name, 'empty-icon')}<p>${esc(text)}</p>`;
+  el.innerHTML = `${icon(name, `empty-icon ${extra}`)}<p>${esc(text)}</p>`;
 }
 
 const cardMarkup = new WeakMap();
@@ -633,8 +680,10 @@ function patchGrid(groups, { flip = false } = {}) {
     }
     return el;
   });
-  const unchanged = nodes.length === grid.children.length && nodes.every((n, i) => grid.children[i] === n);
-  if (!unchanged) grid.replaceChildren(...nodes);
+  const kids = [...grid.children];
+  const grows = nodes.length >= kids.length && kids.every((k, i) => nodes[i] === k);
+  if (!grows) grid.replaceChildren(...nodes);
+  else if (nodes.length > kids.length) grid.append(...nodes.slice(kids.length));
   if (before) flipCards(grid, before);
 }
 
@@ -763,12 +812,23 @@ function stopRadar() {
   box.innerHTML = '';
 }
 
-function renderList({ flip = false } = {}) {
+const pager = new IntersectionObserver((entries) => {
+  if (!entries.some((e) => e.isIntersecting) || currentRoute() !== 'list') return;
+  state.listLimit += PAGE_SIZE;
+  renderList();
+}, { rootMargin: `0px 0px ${PAGE_MARGIN_PX}px 0px` });
+
+function renderList({ flip = false, reset = false } = {}) {
+  if (reset) state.listLimit = PAGE_SIZE;
   const search = activeSearch();
   const groups = search ? filteredGroups() : [];
   const d = state.data;
   const radar = radarSearch();
-  patchGrid(groups, { flip });
+  patchGrid(groups.slice(0, state.listLimit), { flip });
+  const more = $('#grid-more');
+  more.hidden = groups.length <= state.listLimit;
+  pager.unobserve(more);
+  if (!more.hidden) pager.observe(more);
   if (radar) {
     $('#radar').hidden = false;
     renderRadar(radar);
@@ -779,7 +839,9 @@ function renderList({ flip = false } = {}) {
   const empty = $('#empty');
   empty.hidden = groups.length > 0 || Boolean(radar);
   if (!empty.hidden) renderEmpty(empty);
-  $('#result-count').textContent = search?.lastScanAt && d ? t('resultCount', { shown: groups.length, total: d.stats.groups, listings: d.stats.listings, merged: d.stats.merged }) : '';
+  const count = search?.lastScanAt && d ? t('resultCount', { shown: groups.length, total: d.stats.groups, listings: d.stats.listings, merged: d.stats.merged }) : '';
+  const countHtml = count && listingsLoad ? `${esc(count)}<span class="result-loading" title="${esc(t('loading'))}">${icon('loader-circle', 'spin')}</span>` : esc(count);
+  if ($('#result-count').innerHTML !== countHtml) $('#result-count').innerHTML = countHtml;
   for (const btn of document.querySelectorAll('[data-toggle]')) btn.setAttribute('aria-pressed', String(state.view[btn.dataset.toggle]));
 }
 
@@ -1474,8 +1536,10 @@ async function loadListings() {
       } while (listingsReloadPending);
     } finally {
       listingsLoad = null;
+      if (currentRoute() === 'list') renderList();
     }
   })();
+  if (currentRoute() === 'list') renderList();
   return listingsLoad;
 }
 
@@ -1508,7 +1572,7 @@ async function selectSearch(id) {
   renderSearchList();
   renderPrefs();
   renderStatus();
-  renderList();
+  renderList({ reset: true });
   await loadListings();
 }
 
@@ -1708,6 +1772,7 @@ function bindEvents() {
     api('setSetting', { key: 'theme', value: theme }).catch(() => {});
   });
   window.addEventListener('resize', () => {
+    fitLoading($('#empty'));
     if ($('#search-menu').matches(':popover-open')) placeSearchMenu();
     if ($('#settings-menu').matches(':popover-open')) placeSettingsMenu();
   });
@@ -1800,21 +1865,21 @@ function bindEvents() {
   $('#q').addEventListener('input', (e) => {
     state.view.q = e.target.value;
     saveView();
-    renderList({ flip: true });
+    renderList({ flip: true, reset: true });
   });
 
   $('#sort').value = state.view.sort;
   $('#sort').addEventListener('change', (e) => {
     state.view.sort = e.target.value;
     saveView();
-    renderList({ flip: true });
+    renderList({ flip: true, reset: true });
   });
 
   document.querySelectorAll('[data-toggle]').forEach((btn) => btn.addEventListener('click', () => {
     const key = btn.dataset.toggle;
     state.view[key] = !state.view[key];
     saveView();
-    renderList({ flip: true });
+    renderList({ flip: true, reset: true });
   }));
 
   $('#grid').addEventListener('animationend', (e) => {

@@ -1,5 +1,6 @@
 import { $, EASE_OUT, inViewport, preloadImage, reduceMotion, swapImage } from './dom.js';
 import { state } from './state.js';
+import { createLightboxTouch } from './lightboxTouch.js';
 
 function fittedRect(img) {
   const r = img.getBoundingClientRect();
@@ -29,11 +30,15 @@ function zoomFrames(target, source) {
 
 const lightboxChrome = (box) => box.querySelectorAll('.lb-close, .lb-nav, .lb-count');
 
+let touch = null;
+const resetZoom = () => touch?.reset();
+
 export async function openLightbox(images, index = 0, source = null) {
   if (!images?.length) return;
   const box = $('#lightbox');
   const img = $('img', box);
   box.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  resetZoom();
   const pushed = !state.lightbox?.pushed && history.state?.lightbox !== true;
   if (pushed) history.pushState({ lightbox: true }, '');
   state.lightbox = { images, index, source, startIndex: index, pushed: pushed || Boolean(state.lightbox?.pushed) };
@@ -55,6 +60,7 @@ export async function openLightbox(images, index = 0, source = null) {
 
 function showLightboxImage(index, dir = 0) {
   const { images } = state.lightbox;
+  resetZoom();
   const i = (index + images.length) % images.length;
   state.lightbox.index = i;
   const box = $('#lightbox');
@@ -73,7 +79,7 @@ function showLightboxImage(index, dir = 0) {
 
 export const stepLightbox = (step) => showLightboxImage(state.lightbox.index + step, step);
 
-export function closeLightbox({ fromHistory = false } = {}) {
+export function closeLightbox({ fromHistory = false, fling = null } = {}) {
   const lb = state.lightbox;
   if (!lb || lb.closing) return;
   if (lb.pushed) {
@@ -83,23 +89,27 @@ export function closeLightbox({ fromHistory = false } = {}) {
   const box = $('#lightbox');
   const img = $('img', box);
   const finish = () => {
+    if (state.lightbox && state.lightbox !== lb) return;
     box.getAnimations({ subtree: true }).forEach((a) => a.cancel());
-    if (state.lightbox === lb) state.lightbox = null;
+    state.lightbox = null;
     box.hidden = true;
     document.body.classList.remove('lightbox-open');
+    resetZoom();
   };
   if (reduceMotion()) {
     finish();
     return;
   }
   lb.closing = true;
-  const source = lb.index === lb.startIndex && lb.source?.isConnected && inViewport(lb.source) ? lb.source : null;
+  const shared = !fling && !touch?.isZoomed() && lb.index === lb.startIndex && lb.source?.isConnected && inViewport(lb.source);
+  const source = shared ? lb.source : null;
   img.getAnimations().forEach((a) => a.cancel());
   const frames = source && zoomFrames(img, source);
-  const duration = frames ? 340 : 200;
+  const duration = frames ? 340 : fling ? 220 : 200;
+  const flung = fling && { opacity: 0, transform: `translate(${fling.x.toFixed(2)}px, ${fling.y.toFixed(2)}px) scale(${(fling.scale * 0.92).toFixed(4)})` };
   const anim = frames
     ? img.animate([...frames].reverse(), { duration, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards' })
-    : img.animate([{}, { opacity: 0, transform: 'scale(.94)' }], { duration, easing: 'ease-in', fill: 'forwards' });
+    : img.animate([{}, flung ?? { opacity: 0, transform: 'scale(.94)' }], { duration, easing: flung ? 'ease-out' : 'ease-in', fill: 'forwards' });
   box.animate([{}, { backgroundColor: 'rgba(0, 0, 0, 0)' }], { duration, easing: 'ease-in', fill: 'forwards' });
   for (const el of lightboxChrome(box)) el.animate([{}, { opacity: 0 }], { duration: 150, fill: 'forwards' });
   anim.finished.then(finish, finish);
@@ -115,10 +125,14 @@ export function bindLightbox() {
     else if (action === 'next') stepLightbox(1);
     else if (e.target === box) closeLightbox();
   });
+  touch = createLightboxTouch(box, {
+    step: (dir) => stepLightbox(dir),
+    dismiss: (fling) => closeLightbox({ fling }),
+  });
   let startX = null;
-  box.addEventListener('pointerdown', (e) => { startX = e.clientX; });
+  box.addEventListener('pointerdown', (e) => { startX = e.pointerType === 'mouse' ? e.clientX : null; });
   box.addEventListener('pointerup', (e) => {
-    if (startX == null || !state.lightbox || state.lightbox.closing) return;
+    if (startX == null || e.pointerType !== 'mouse' || !state.lightbox || state.lightbox.closing) return;
     const dx = e.clientX - startX;
     startX = null;
     if (Math.abs(dx) > 50) stepLightbox(dx < 0 ? 1 : -1);

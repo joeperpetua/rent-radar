@@ -15,7 +15,7 @@ export const GUIDES = {
     { id: 'firefox-android', name: 'Firefox', store: 'firefox', steps: ['step.open', 'firefox.tap'], note: 'fxa.note', get: 'https://www.mozilla.org/firefox/browsers/mobile/android/' },
   ],
   ios: [
-    { id: 'orion', name: 'Orion', store: 'firefox', steps: ['orion.install', 'orion.enable', 'step.open', 'firefox.tap'], get: 'https://apps.apple.com/app/id1484498200' },
+    { id: 'orion', name: 'Orion', store: 'chrome', steps: ['orion.install', 'orion.enable', 'step.open', 'chrome.tap'], get: 'https://apps.apple.com/app/id1484498200' },
   ],
 };
 

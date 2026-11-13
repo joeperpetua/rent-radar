@@ -135,6 +135,7 @@ export const handlers = {
     if (details) {
       const patch = { detailsAt: new Date().toISOString() };
       if (details.description) patch.description = details.description;
+      if (typeof details.reserved === 'boolean') patch.reserved = details.reserved;
       if (details.sourceUrl) {
         patch.sourceUrl = details.sourceUrl;
         patch.sourceHost = details.sourceHost;

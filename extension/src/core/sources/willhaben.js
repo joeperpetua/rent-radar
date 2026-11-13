@@ -12,6 +12,7 @@ const ROWS = 90;
 const MAX_PAGES = 15;
 const DETAIL_CONCURRENCY = 3;
 const MAX_DETAIL_FETCHES_PER_RUN = 120;
+const DETAIL_RECHECK_MS = 12 * 60 * 60 * 1000;
 
 export const id = 'willhaben';
 export const label = 'willhaben';
@@ -114,6 +115,7 @@ export function parseDetails(html) {
     const rawDesc = descAttr?.values?.[0];
     return {
       inactive: false,
+      reserved: ad.advertStatus?.id === 'reserved',
       description: rawDesc ? htmlToText(rawDesc) : null,
     };
   } catch {
@@ -130,26 +132,32 @@ export async function fetchDetails(url) {
 
 export async function addDetails(listings, stored) {
   const pending = [];
+  const stale = [];
+  const cutoff = Date.now() - DETAIL_RECHECK_MS;
   for (const listing of listings) {
     const known = stored?.get(listing.id);
-    if (known?.detailsAt || (known?.description && !known.description.endsWith('...'))) {
-      listing.description = known.description;
-      listing.detailsAt = known.detailsAt ?? new Date().toISOString();
-    } else {
+    if (!(known?.detailsAt || (known?.description && !known.description.endsWith('...')))) {
       pending.push(listing);
+      continue;
     }
+    listing.description = known.description;
+    listing.detailsAt = known.detailsAt ?? new Date().toISOString();
+    if (typeof known.reserved === 'boolean') listing.reserved = known.reserved;
+    if (Date.parse(listing.detailsAt) < cutoff) stale.push(listing);
   }
+  stale.sort((a, b) => a.detailsAt.localeCompare(b.detailsAt));
 
-  const queue = pending.slice(0, MAX_DETAIL_FETCHES_PER_RUN);
+  const queue = [...pending, ...stale].slice(0, MAX_DETAIL_FETCHES_PER_RUN);
   let failed = 0;
 
   await Promise.all(Array.from({ length: DETAIL_CONCURRENCY }, async () => {
     for (let listing = queue.shift(); listing; listing = queue.shift()) {
       try {
         const details = await fetchDetails(listing.url);
-        if (details?.description) {
-          listing.description = details.description;
-          listing.detailsAt = new Date().toISOString();
+        if (details && !details.inactive) {
+          if (details.description) listing.description = details.description;
+          if (typeof details.reserved === 'boolean') listing.reserved = details.reserved;
+          if (details.description || typeof details.reserved === 'boolean') listing.detailsAt = new Date().toISOString();
         }
       } catch {
         failed++;

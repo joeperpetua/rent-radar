@@ -90,6 +90,7 @@ export function renderDetail(id) {
             <h1>${esc(g.title)}</h1>
             <button class="btn fav-detail" type="button" data-action="fav-detail"></button>
           </div>
+          ${g.reserved ? `<p class="reserved-note">${icon('lock')}<strong>${esc(t('badgeReserved'))}</strong><span>${esc(t('reservedHint'))}</span></p>` : ''}
           <div class="address">${esc(g.address ?? '')}</div>
           <dl class="keyfacts">${facts.map(([k, v]) => `<div><dt>${esc(t(k))}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
           ${features.length ? `<div class="panel"><h2>${esc(t('features'))}</h2><p class="description">${esc(features.join(' · '))}</p></div>` : ''}
@@ -113,7 +114,7 @@ export function renderDetail(id) {
 
                 return `
                   <a class="origin ${s.source}" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
-                    <strong>${esc(label)}</strong>
+                    <strong>${esc(label)}${s.reserved ? `<span class="o-reserved">${esc(t('badgeReserved'))}</span>` : ''}</strong>
                     <span class="o-price">${euro(s.price, 2)}</span>
                     <span class="o-title">${esc(s.title)}</span>
                     <span class="o-open">${esc(actionLabel)}${icon('external-link')}</span>

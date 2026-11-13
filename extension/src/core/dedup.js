@@ -1,4 +1,5 @@
 import { haversineMeters } from './geo.js';
+import { isReserved } from './reserved.js';
 
 const SOURCE_PRIORITY = ['willhaben', 'immoscout', 'bwsg', 'oevw', 'nebau', 'immo', 'wunderflats', 'derstandard', 'dibeo', 'findmyhome', 'sn'];
 const CROSS_SOURCE_THRESHOLD = 5;
@@ -300,6 +301,7 @@ function buildGroup(members) {
     deposit: first('deposit'),
     floor: first('floor'),
     extras: [...new Set(members.flatMap((m) => m.extras ?? []))],
+    reserved: members.some(isReserved),
     portals: new Set(members.map((m) => m.source)).size,
     sources: ordered.map((m) => ({
       id: m.id,
@@ -314,6 +316,7 @@ function buildGroup(members) {
       sourceHost: m.sourceHost ?? null,
       sourceName: m.sourceName ?? null,
       agency: m.agency ?? null,
+      reserved: isReserved(m),
     })),
   };
 }

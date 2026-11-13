@@ -862,6 +862,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .price-row .was { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
 
 .badge.drop { background: #0e7f76; color: #fff; }
+.badge.reserved { background: #8a4b12; color: #fff; }
 
 .history + .history { margin-top: 14px; }
 .history-source { font-size: 13px; }
@@ -1136,6 +1137,35 @@ body.lightbox-open { overflow: hidden; }
 .origin:hover .o-open .icon { transform: translate(2px, -2px); }
 .origin { transition: background .15s ease, transform .15s ease; }
 .origin:hover { transform: translateX(2px); }
+
+.origin .o-reserved {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #8a4b12;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  vertical-align: 1px;
+}
+
+.reserved-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #8a4b12 35%, transparent);
+  background: color-mix(in srgb, #8a4b12 12%, transparent);
+  font-size: 13px;
+}
+
+.reserved-note .icon { flex: none; color: #8a4b12; }
+.reserved-note strong { letter-spacing: .04em; }
+.reserved-note span { color: var(--muted); }
 
 .rating { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 14px; }
 .rating h3 { margin: 0 0 10px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
@@ -1543,6 +1573,7 @@ body.lightbox-open { overflow: hidden; }
 [data-style="styled"] .badge { height: 26px; padding: 0 11px; background: rgba(255, 255, 255, .9); color: #2b1e19; backdrop-filter: blur(6px); }
 [data-style="styled"] .badge.new { background: var(--new); color: #fff; }
 [data-style="styled"] .badge.drop { background: var(--drop); color: #fff; }
+[data-style="styled"] .badge.reserved { background: #8a4b12; color: #fff; }
 [data-style="styled"] .badge.cat { background: var(--cat); color: #fff; }
 [data-style="styled"] .badge.multi, [data-style="styled"] .badge.photos { background: rgba(30, 20, 15, .5); color: #fff; }
 [data-style="styled"] .card-actions { top: 20px; right: 20px; }

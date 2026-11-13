@@ -60,6 +60,7 @@ function buildCardHtml(g, fav) {
       <div class="thumb">
         ${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<div class="noimg">${esc(t('noImage'))}</div>`}
         <div class="badges">
+          ${g.reserved ? `<span class="badge reserved" title="${esc(t('reservedHint'))}">${icon('lock')}${esc(t('badgeReserved'))}</span>` : ''}
           ${g.isNew ? `<span class="badge new">${icon('sparkles')}${esc(t('badgeNew'))}</span>` : ''}
           ${dropped ? `<span class="badge drop">${icon('trending-down')}${esc(t('badgeDrop', { pct: num(Math.abs(g.priceChange.pct), 1) }))}</span>` : ''}
           ${g.categories.filter((c) => c !== 'regular').map((c) => `<span class="badge cat cat-${c}">${esc(t(`catShort.${c}`))}</span>`).join('')}

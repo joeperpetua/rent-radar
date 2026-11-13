@@ -1,8 +1,12 @@
 const APP_URL = chrome.runtime.getURL('app/index.html');
 
 async function appTabs() {
-  const contexts = await chrome.runtime.getContexts({ contextTypes: ['TAB'] });
-  return contexts.filter((c) => c.documentUrl?.startsWith(APP_URL));
+  try {
+    const contexts = await chrome.runtime.getContexts({ contextTypes: ['TAB'] });
+    return contexts.filter((c) => c.documentUrl?.startsWith(APP_URL));
+  } catch {
+    return [];
+  }
 }
 
 async function focusTab({ tabId, windowId }) {
@@ -12,12 +16,20 @@ async function focusTab({ tabId, windowId }) {
 
 async function openApp(fromTab) {
   const [existing] = await appTabs();
-  if (existing) await focusTab(existing);
-  else if (fromTab) await chrome.tabs.update(fromTab.id, { url: APP_URL });
-  else await chrome.tabs.create({ url: APP_URL });
+  if (existing) {
+    await focusTab(existing);
+    return;
+  }
+  if (fromTab) {
+    try {
+      await chrome.tabs.update(fromTab.id, { url: APP_URL });
+      return;
+    } catch {}
+  }
+  await chrome.tabs.create({ url: APP_URL });
 }
 
-chrome.action.onClicked.addListener(() => openApp());
+chrome.action?.onClicked.addListener(() => openApp());
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   if (reason === chrome.runtime.OnInstalledReason.INSTALL) openApp();

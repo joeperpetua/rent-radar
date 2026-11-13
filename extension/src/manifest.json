@@ -32,6 +32,17 @@
       "run_at": "document_start"
     }
   ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "app/index.html"
+      ],
+      "matches": [
+        "http://localhost/*",
+        "https://joeperpetua.github.io/*"
+      ]
+    }
+  ],
   "permissions": [
     "unlimitedStorage"
   ],

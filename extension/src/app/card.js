@@ -8,6 +8,7 @@ import { toggleFav } from './favorites.js';
 import { openLightbox } from './lightbox.js';
 
 const cardHtmlCache = new WeakMap();
+const cardMarkup = new WeakMap();
 
 export const isDrop = (g) => g.priceChange != null && g.priceChange.delta < 0;
 
@@ -88,6 +89,24 @@ function buildCardHtml(g, fav) {
     </article>`;
 }
 
+export function cardNode(g) {
+  const html = cardHtml(g);
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html.trim();
+  const el = tpl.content.firstElementChild;
+  cardMarkup.set(el, html);
+  return el;
+}
+
+export const cardIsCurrent = (el, g) => cardMarkup.get(el) === cardHtml(g);
+
+export function syncCardFav(card, g) {
+  if (!card) return;
+  const fav = isFav(g);
+  for (const btn of card.querySelectorAll('[data-action="fav"]')) btn.setAttribute('aria-pressed', String(fav));
+  cardMarkup.set(card, cardHtml(g));
+}
+
 export function onCardAction(e, lookup, rerender) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -96,7 +115,7 @@ export function onCardAction(e, lookup, rerender) {
   const g = lookup(card);
   if (!g) return;
   if (btn.dataset.action === 'fav') {
-    toggleFav(g, rerender);
+    toggleFav(g, () => rerender(card, g));
     return;
   }
   const img = $('.thumb img', card);

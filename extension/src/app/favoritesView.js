@@ -1,6 +1,6 @@
 import { t } from './i18n.js';
 import { icon } from './icons.js';
-import { $, reduceMotion } from './dom.js';
+import { $, keepScroll, reduceMotion } from './dom.js';
 import { esc, euro, num, relTime } from './format.js';
 import { api, isFav, isQueued, isScanning, state } from './state.js';
 import { bindCardSwipe, cardHtml, onCardAction } from './card.js';
@@ -101,7 +101,7 @@ export function bindFavorites() {
   bindCardSwipe($('#favorites-view'), favGroup);
   $('#favorites-view').addEventListener('click', (e) => {
     if (e.target.closest('.card')) {
-      onCardAction(e, favGroup, renderFavorites);
+      onCardAction(e, favGroup, () => keepScroll(() => renderFavorites()));
       return;
     }
     const pick = Number(e.target.closest('[data-fav-select]')?.dataset.favSelect);

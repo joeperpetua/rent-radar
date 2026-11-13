@@ -6,6 +6,12 @@ export const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)')
 
 export const withTransition = (fn) => (reduceMotion() || !document.startViewTransition ? fn() : document.startViewTransition(fn));
 
+export function keepScroll(render) {
+  const { scrollX, scrollY } = window;
+  render();
+  if (window.scrollX !== scrollX || window.scrollY !== scrollY) window.scrollTo(scrollX, scrollY);
+}
+
 export function inViewport(el) {
   const r = el.getBoundingClientRect();
   return r.bottom > 0 && r.top < window.innerHeight && r.width > 0;

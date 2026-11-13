@@ -4,7 +4,7 @@ import { $, EASE_OUT, inViewport, reduceMotion } from './dom.js';
 import { esc } from './format.js';
 import { districtLabel, stateName } from './places.js';
 import { PAGE_SIZE, activeSearch, api, isQueued, isScanning, saveView, state } from './state.js';
-import { bindCardSwipe, cardHtml, isDrop, onCardAction } from './card.js';
+import { bindCardSwipe, cardIsCurrent, cardNode, isDrop, onCardAction, syncCardFav } from './card.js';
 import { radarSearch, renderRadar, stopRadar } from './radar.js';
 import { detailId, listRoute, route } from './router.js';
 import { renderStatus } from './status.js';
@@ -13,7 +13,6 @@ import { renderCategoryCounts } from './prefs.js';
 const MAX_STAGGER = 14;
 const PAGE_MARGIN_PX = 1200;
 
-const cardMarkup = new WeakMap();
 let filterCache = { data: null, key: '', groups: [] };
 let listingsLoad = null;
 let listingsReloadPending = false;
@@ -76,14 +75,6 @@ function renderEmpty(el) {
   el.innerHTML = `${icon(name, `empty-icon ${extra}`)}<p>${esc(text)}</p>`;
 }
 
-function cardNode(html) {
-  const tpl = document.createElement('template');
-  tpl.innerHTML = html.trim();
-  const el = tpl.content.firstElementChild;
-  cardMarkup.set(el, html);
-  return el;
-}
-
 function visibleRects(grid) {
   const rects = new Map();
   for (const el of grid.children) {
@@ -108,26 +99,31 @@ function flipCards(grid, before) {
   }
 }
 
+function reconcile(parent, nodes) {
+  const next = new Set(nodes);
+  for (const el of [...parent.children]) if (!next.has(el)) el.remove();
+  nodes.forEach((node, i) => {
+    const current = parent.children[i];
+    if (current !== node) parent.insertBefore(node, current ?? null);
+  });
+}
+
 function patchGrid(groups, { flip = false } = {}) {
   const grid = $('#grid');
   const before = flip && !reduceMotion() && grid.children.length ? visibleRects(grid) : null;
   const existing = new Map([...grid.children].map((el) => [el.dataset.id, el]));
   let entering = 0;
   const nodes = groups.map((g) => {
-    const html = cardHtml(g);
     const old = existing.get(g.id);
-    if (old && cardMarkup.get(old) === html) return old;
-    const el = cardNode(html);
+    if (old && cardIsCurrent(old, g)) return old;
+    const el = cardNode(g);
     if (!old && !reduceMotion()) {
       el.classList.add('entering');
       el.style.setProperty('--i', Math.min(entering++, MAX_STAGGER));
     }
     return el;
   });
-  const kids = [...grid.children];
-  const grows = nodes.length >= kids.length && kids.every((k, i) => nodes[i] === k);
-  if (!grows) grid.replaceChildren(...nodes);
-  else if (nodes.length > kids.length) grid.append(...nodes.slice(kids.length));
+  reconcile(grid, nodes);
   if (before) flipCards(grid, before);
 }
 
@@ -225,6 +221,6 @@ export function bindList() {
   });
 
   const groupOf = (card) => state.data?.groups.find((x) => x.id === card.dataset.id);
-  $('#grid').addEventListener('click', (e) => onCardAction(e, groupOf, renderList));
+  $('#grid').addEventListener('click', (e) => onCardAction(e, groupOf, syncCardFav));
   bindCardSwipe($('#grid'), groupOf);
 }

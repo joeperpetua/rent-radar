@@ -75,8 +75,8 @@ jobs:
           cat > "$notes" <<'EOF'
           ### Install
 
-          - Chrome, Edge, Brave and other Chromium browsers: [Chrome Web Store](https://chromewebstore.google.com/detail/fbknlkhcgimpehjafnhgdceejiihibfi)
-          - Firefox on desktop and Android, and Orion on iOS: [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/rentradar/)
+          - Chrome, Edge, Brave and other Chromium browsers, and Orion on iOS: [Chrome Web Store](https://chromewebstore.google.com/detail/fbknlkhcgimpehjafnhgdceejiihibfi)
+          - Firefox on desktop and Android: [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/rentradar/)
           - Install guide for each browser: [joeperpetua.github.io/rent-radar](https://joeperpetua.github.io/rent-radar/)
 
           ### Files

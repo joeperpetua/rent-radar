@@ -3,11 +3,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_PREFS, PROPERTY_TYPES, SOURCE_IDS, effectivePrefs, isScannable, missingGroups, needsRescan, sanitizePrefs, scrapeScope } from '../src/core/prefs.js';
 import { CATEGORIES } from '../src/core/categories.js';
-import { STATES } from '../src/core/geo.js';
+import { DISTRICTS, STATES } from '../src/core/geo.js';
 import { closeDb, openDb } from '../src/core/db.js';
 
 const STATE_IDS = STATES.map((s) => s.id);
-const ALL_DISTRICTS = Array.from({ length: 23 }, (_, i) => i + 1);
+const ALL_DISTRICTS = DISTRICTS.map((d) => d.number).sort((a, b) => a - b);
 const everything = sanitizePrefs({ states: STATE_IDS, districts: ALL_DISTRICTS, types: PROPERTY_TYPES, categories: CATEGORIES, sources: SOURCE_IDS });
 
 test('a new search starts with every source and nothing else picked, and cannot be created like that', () => {
@@ -18,7 +18,9 @@ test('a new search starts with every source and nothing else picked, and cannot 
   assert.deepEqual(missingGroups({ ...prefs, sources: [] }), ['states', 'types', 'categories', 'sources']);
   assert.deepEqual(sanitizePrefs({ sources: [] }).sources, []);
   assert.deepEqual(missingGroups(sanitizePrefs({ ...everything, districts: [] })), ['districts']);
-  assert.deepEqual(missingGroups(sanitizePrefs({ ...everything, states: ['tirol'], districts: [] })), []);
+  assert.deepEqual(missingGroups(sanitizePrefs({ ...everything, states: ['tirol'], districts: [] })), ['districts']);
+  assert.deepEqual(missingGroups(sanitizePrefs({ ...everything, states: ['wien', 'tirol'], districts: [3] })), ['districts']);
+  assert.deepEqual(missingGroups(sanitizePrefs({ ...everything, states: ['wien', 'tirol'], districts: [3, 701] })), []);
   assert.deepEqual(missingGroups(everything), []);
 });
 
@@ -26,6 +28,7 @@ test('picks are kept exactly as ticked', () => {
   assert.deepEqual(everything.states, STATE_IDS);
   assert.deepEqual(everything.districts, ALL_DISTRICTS);
   assert.deepEqual(sanitizePrefs({ states: ['tirol'], districts: [3] }).districts, []);
+  assert.deepEqual(sanitizePrefs({ states: ['tirol', 'wien'], districts: [701, 3, 101, 999] }).districts, [3, 701]);
 });
 
 test('nothing ticked in a scan group means nothing is scanned', () => {
@@ -38,6 +41,8 @@ test('all states scan Austria in one go, all districts do not filter', () => {
   assert.equal(effectivePrefs(everything).districts, null);
   assert.deepEqual(effectivePrefs({ ...everything, states: ['wien'], districts: [3] }).districts, [3]);
   assert.equal(effectivePrefs({ ...everything, states: ['tirol'] }).districts, null);
+  assert.deepEqual(effectivePrefs({ ...everything, states: ['wien', 'tirol'], districts: [...ALL_DISTRICTS.filter((d) => d < 24), 701] }).districts, [701]);
+  assert.equal(effectivePrefs({ ...everything, states: ['wien', 'tirol'], districts: [3] }).districts.join(), '3');
 });
 
 test('narrowing does not rescan; widening does', () => {

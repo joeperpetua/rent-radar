@@ -1,5 +1,5 @@
 import { CATEGORIES } from './categories.js';
-import { STATES } from './geo.js';
+import { districtState, districtsOf, STATES } from './geo.js';
 
 export const PROPERTY_TYPES = ['apartment', 'house'];
 export const SOURCE_IDS = ['willhaben', 'immoscout', 'derstandard', 'dibeo', 'findmyhome', 'sn', 'wunderflats', 'immo', 'bwsg', 'oevw', 'nebau'];
@@ -38,17 +38,21 @@ export const DEFAULT_PREFS = {
   sources: SOURCE_IDS,
 };
 
-const DISTRICT_COUNT = 23;
-const ALL_DISTRICTS = Array.from({ length: DISTRICT_COUNT }, (_, i) => i + 1);
+const DISTRICTS_BY_STATE = new Map(STATE_IDS.map((s) => [s, districtsOf(s)]));
 const REQUIRED_GROUPS = ['states', 'types', 'categories', 'sources'];
+
+const pickedIn = (prefs, stateId) => (prefs.districts ?? []).filter((d) => districtState(d) === stateId);
 
 export function effectivePrefs(prefs) {
   const allStates = prefs.states.length === STATE_IDS.length;
-  const vienna = allStates || prefs.states.includes('wien');
+  const narrowed = prefs.states.flatMap((s) => {
+    const picked = pickedIn(prefs, s);
+    return picked.length < DISTRICTS_BY_STATE.get(s).length ? picked : [];
+  });
   return {
     ...prefs,
     states: allStates ? null : prefs.states,
-    districts: !vienna || !prefs.districts?.length || prefs.districts.length === DISTRICT_COUNT ? null : prefs.districts,
+    districts: narrowed.length ? narrowed : null,
   };
 }
 
@@ -56,20 +60,23 @@ export const isScannable = (prefs) => prefs.states.length > 0 && prefs.types.len
 
 export function missingGroups(prefs) {
   const missing = REQUIRED_GROUPS.filter((key) => !prefs[key]?.length);
-  if (prefs.states?.includes('wien') && !prefs.districts?.length) missing.push('districts');
+  if (prefs.states?.some((s) => !pickedIn(prefs, s).length)) missing.push('districts');
   return missing;
 }
 
+export function withAllDistricts(prefs) {
+  const extra = (prefs.states ?? []).filter((s) => !pickedIn(prefs, s).length).flatMap((s) => DISTRICTS_BY_STATE.get(s) ?? []);
+  return extra.length ? { ...prefs, districts: [...(prefs.districts ?? []), ...extra].sort((a, b) => a - b) } : prefs;
+}
+
 export function fillUnspecified(prefs) {
-  const states = prefs.states.length ? prefs.states : STATE_IDS;
-  return {
+  return withAllDistricts({
     ...prefs,
-    states,
-    districts: states.includes('wien') && !prefs.districts.length ? ALL_DISTRICTS : prefs.districts,
+    states: prefs.states.length ? prefs.states : STATE_IDS,
     types: prefs.types.length ? prefs.types : PROPERTY_TYPES,
     categories: prefs.categories.length ? prefs.categories : CATEGORIES,
     sources: prefs.sources.length ? prefs.sources : SOURCE_IDS,
-  };
+  });
 }
 
 export const scrapeScope = (prefs) => {
@@ -112,7 +119,7 @@ export function sanitizePrefs(input = {}) {
   const list = (v) => (Array.isArray(v) ? v : null);
   const pick = (value, allowed) => [...new Set((list(value) ?? []).filter((v) => allowed.includes(v)))];
   const states = pick(input.states, STATE_IDS);
-  const districts = [...new Set((list(input.districts) ?? []).map(Number).filter((d) => d >= 1 && d <= DISTRICT_COUNT))].sort((a, b) => a - b);
+  const districts = [...new Set((list(input.districts) ?? []).map(Number).filter((d) => states.includes(districtState(d))))].sort((a, b) => a - b);
   const pair = (minKey, maxKey, limit) => {
     const min = int(input[minKey], 0, limit, 0);
     const max = int(input[maxKey], 0, limit, 0);
@@ -127,7 +134,7 @@ export function sanitizePrefs(input = {}) {
   }
   return {
     states,
-    districts: states.includes('wien') ? districts : [],
+    districts,
     types: pick(input.types, PROPERTY_TYPES),
     categories: pick(input.categories, CATEGORIES),
     ...pair('minPrice', 'maxPrice', 100000),

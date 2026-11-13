@@ -1,5 +1,6 @@
 import { addV4Sources, expandLegacySources, fillUnspecified, sanitizePrefs } from './prefs.js';
 import { LEGACY_SOURCE_IDS, migrateListingId } from './legacy.js';
+import { districtFor, inDistricts } from './geo.js';
 
 const DB_NAME = 'rentradar';
 const DB_VERSION = 6;
@@ -260,7 +261,8 @@ function latestPrice(prices) {
 }
 
 async function writeListing(t, searchId, listing, at) {
-  const { firstSeen: _f, lastSeen: _l, ...data } = listing;
+  const { firstSeen: _f, lastSeen: _l, ...rest } = listing;
+  const data = { ...rest, district: listing.district ?? districtFor(listing) };
   const listings = t.objectStore(LISTINGS);
   const existing = await req(listings.get(listing.id));
   const prices = existing?.prices ?? [];
@@ -276,7 +278,7 @@ async function writeListing(t, searchId, listing, at) {
     price: listing.price ?? null,
     area: listing.area ?? null,
     rooms: listing.rooms ?? null,
-    district: listing.district ?? null,
+    district: data.district ?? null,
     data,
     firstSeen: existing?.firstSeen ?? at,
     lastSeen: at,
@@ -350,8 +352,10 @@ function matches(l, prefs) {
     && inRange(l.area, prefs.minArea, prefs.maxArea)
     && inRange(l.rooms, prefs.minRooms, prefs.maxRooms)
     && (prefs.states == null || !prefs.states.length || prefs.states.includes(l.state))
-    && (prefs.districts == null || !prefs.districts.length || l.state !== 'wien' || prefs.districts.includes(l.district));
+    && inDistricts({ state: l.state, district: rowDistrict(l) }, prefs.districts);
 }
+
+const rowDistrict = (l) => l.district ?? districtFor({ state: l.state, postcode: l.data?.postcode, city: l.data?.city });
 
 async function memberListings(t, searchId, filter = () => true) {
   const members = (await req(t.objectStore(MEMBERS).index('searchId').getAll(searchId))).filter(filter);
@@ -360,8 +364,8 @@ async function memberListings(t, searchId, filter = () => true) {
   return rows.filter((r) => r.l);
 }
 
-const activeRow = ({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen });
-const removedRow = ({ m, l }) => ({ ...l.data, firstSeen: m.firstSeen, lastSeen: m.lastSeen, removed: true });
+const activeRow = ({ m, l }) => ({ ...l.data, district: rowDistrict(l), firstSeen: m.firstSeen, lastSeen: m.lastSeen });
+const removedRow = ({ m, l }) => ({ ...activeRow({ m, l }), removed: true });
 const keepsRemoved = (l, prefs) => prefs.sources.includes(l.source) && prefs.types.includes(l.type) && !l.data?.forSale;
 
 export const queryListings = (searchId, prefs) => read([MEMBERS, LISTINGS], async (t) => {

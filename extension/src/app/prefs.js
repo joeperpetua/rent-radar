@@ -16,6 +16,7 @@ const BULK_TOGGLES = ['states', 'categories', 'districts', 'sources'];
 const AUTOSAVED = ['categories', 'sources'];
 
 const tickedValues = (id) => [...document.querySelectorAll(`#${id} input:checked`)].map((i) => i.value);
+const boxesOf = (id) => [...document.querySelectorAll(id === 'districts' ? '#districts .district-group:not([hidden]) input' : `#${id} input`)];
 
 function suggestName(prefs) {
   const everywhere = !prefs.states.length || prefs.states.length === state.config.states.length;
@@ -34,15 +35,17 @@ function readPrefsForm(form) {
     states: checked('state'),
     types: checked('type'),
     categories: checked('category'),
-    districts: checked('district').map(Number),
+    districts: [...form.querySelectorAll('#districts .district-group:not([hidden]) input:checked')].map((i) => Number(i.value)),
     sources: checked('source'),
   };
 }
 
 function updateFormState() {
-  $('#districts-field').hidden = !$('#states input[value="wien"]')?.checked;
+  const picked = new Set(tickedValues('states'));
+  for (const group of document.querySelectorAll('#districts .district-group')) group.hidden = !picked.has(group.dataset.state);
+  $('#districts-field').hidden = !picked.size;
   for (const id of BULK_TOGGLES) {
-    const boxes = [...document.querySelectorAll(`#${id} input`)];
+    const boxes = boxesOf(id);
     $(`#${id}-all`).disabled = boxes.every((i) => i.checked);
     $(`#${id}-none`).disabled = boxes.every((i) => !i.checked);
   }
@@ -54,7 +57,7 @@ function updateFormState() {
 }
 
 function tickAll(id, checked) {
-  document.querySelectorAll(`#${id} input`).forEach((i) => { i.checked = checked; });
+  boxesOf(id).forEach((i) => { i.checked = checked; });
   updateFormState();
   if (AUTOSAVED.includes(id)) savePrefsPatch({ [id]: tickedValues(id) });
 }
@@ -108,11 +111,20 @@ export function renderPrefs() {
     </label>`).join('');
   renderCategoryCounts();
 
-  $('#districts').innerHTML = districts.map((d) => `
-    <label class="check" title="${esc(d.postcode)} ${esc(d.name)}">
-      <input type="checkbox" name="district" value="${d.number}" ${prefs.districts.includes(d.number) ? 'checked' : ''}>
-      <b>${d.number}</b><span>${esc(d.name)}</span>
-    </label>`).join('');
+  $('#districts').innerHTML = states.map((s) => {
+    const own = districts.filter((d) => d.state === s.id);
+    const all = !own.some((d) => prefs.districts.includes(d.number));
+    return `<div class="district-group" data-state="${s.id}" role="group" aria-label="${esc(stateName(s.id))}">
+      <span class="source-group-title">${esc(stateName(s.id))}</span>
+      <div class="district-grid">
+        ${own.map((d) => `
+        <label class="check" title="${esc([d.postcode, d.name].filter(Boolean).join(' '))}">
+          <input type="checkbox" name="district" value="${d.number}" ${all || prefs.districts.includes(d.number) ? 'checked' : ''}>
+          ${d.state === 'wien' ? `<b>${d.number}</b>` : ''}<span>${esc(d.name)}</span>
+        </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 
   $('#sources').innerHTML = SOURCE_KINDS.map((kind) => {
     const group = sources.filter((s) => (s.kind ?? 'portal') === kind);

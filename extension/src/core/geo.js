@@ -1,9 +1,17 @@
-export const DISTRICTS = [
+import { BEZIRKE, BEZIRK_BY_POSTCODE, TOWNS_BY_POSTCODE } from './bezirke.js';
+
+export const VIENNA_DISTRICTS = [
   'Innere Stadt', 'Leopoldstadt', 'Landstraße', 'Wieden', 'Margareten', 'Mariahilf',
   'Neubau', 'Josefstadt', 'Alsergrund', 'Favoriten', 'Simmering', 'Meidling',
   'Hietzing', 'Penzing', 'Rudolfsheim-Fünfhaus', 'Ottakring', 'Hernals', 'Währing',
   'Döbling', 'Brigittenau', 'Floridsdorf', 'Donaustadt', 'Liesing',
-].map((name, i) => ({ number: i + 1, name, postcode: `1${String(i + 1).padStart(2, '0')}0` }));
+].map((name, i) => ({ number: i + 1, name, state: 'wien', postcode: `1${String(i + 1).padStart(2, '0')}0` }));
+
+export const DISTRICTS = [...VIENNA_DISTRICTS, ...BEZIRKE];
+const DISTRICT_STATE = new Map(DISTRICTS.map((d) => [d.number, d.state]));
+
+export const districtState = (number) => DISTRICT_STATE.get(number) ?? null;
+export const districtsOf = (stateId) => DISTRICTS.filter((d) => d.state === stateId).map((d) => d.number);
 
 export const STATES = [
   { id: 'wien', name: 'Wien', willhaben: 900, immoscout: '009', immoscoutPath: 'wien/wien' },
@@ -49,6 +57,28 @@ export function districtFromPostcode(postcode) {
   if (!m) return null;
   const n = Number(m[1]);
   return n >= 1 && n <= 23 ? n : null;
+}
+
+const townKey = (name) => ` ${(name ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\bst\.?\s+/g, 'sankt ').replace(/[^a-z]+/g, ' ').trim()} `;
+
+export function districtFor({ state, postcode, city }) {
+  if (state === 'wien' || (!state && stateFromPostcode(postcode) === 'wien')) return districtFromPostcode(postcode);
+  const entry = BEZIRK_BY_POSTCODE[postcode ?? ''];
+  if (entry == null) return null;
+  if (!Array.isArray(entry)) return entry;
+  const town = townKey(city);
+  if (town.trim()) {
+    const towns = Object.entries(TOWNS_BY_POSTCODE[postcode]).map(([b, names]) => [Number(b), names.map(townKey)]);
+    const hit = towns.find(([, names]) => names.includes(town)) ?? towns.find(([, names]) => names.some((name) => town.includes(name)));
+    if (hit) return hit[0];
+  }
+  return entry.find((b) => DISTRICT_STATE.get(b) === state) ?? entry[0];
+}
+
+export function inDistricts(listing, districts) {
+  if (!districts?.length) return true;
+  const own = districts.filter((d) => DISTRICT_STATE.get(d) === listing.state);
+  return !own.length || own.includes(listing.district);
 }
 
 export function findPostcode(text) {

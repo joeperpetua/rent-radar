@@ -2,6 +2,7 @@ import { SOURCES } from './sources/index.js';
 import { CATEGORIES, passesCategories } from './categories.js';
 import { cachedGroups } from './groups.js';
 import { effectivePrefs, isScannable, scrapeScope } from './prefs.js';
+import { inDistricts } from './geo.js';
 import { dataVersion, getRuns, getSearch, getStoredListings, initialScanAt, saveScan, saveSourceResult } from './db.js';
 
 export { SOURCES };
@@ -43,7 +44,7 @@ export async function runScan(search, log = console.log) {
     const started = Date.now();
     const entry = progress.sources[key];
     try {
-      const result = await SOURCES[key].search(prefs, {
+      const result = await SOURCES[key].search({ ...prefs, districts: null }, {
         onProgress: (count) => { entry.count = count; notify(); },
         stored: await getStoredListings(key),
       });
@@ -182,8 +183,8 @@ export async function buildView(search) {
   const prefs = effectivePrefs(search.prefs);
   const initialAt = await initialScanAt(search.id);
   const cached = await dedupedGroups(search);
-  const inDistricts = cached.filter(({ group: g }) => g.price != null && g.price > 0 && (prefs.districts == null || !prefs.districts.length || g.state !== 'wien' || prefs.districts.includes(g.district)));
-  const all = inDistricts.map(({ group, history }) => {
+  const placed = cached.filter(({ group: g }) => g.price != null && g.price > 0 && inDistricts(g, prefs.districts));
+  const all = placed.map(({ group, history }) => {
     const listed = listedAt(history, initialAt);
     return { ...group, isNew: isNew(listed, now), listedAt: listed };
   });

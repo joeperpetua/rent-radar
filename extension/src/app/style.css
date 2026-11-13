@@ -656,6 +656,9 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 
 @keyframes toast-in { from { opacity: 0; transform: translateX(24px) scale(.96); } }
 
+.district-groups { display: flex; flex-direction: column; gap: 12px; }
+.district-group { display: flex; flex-direction: column; gap: 2px; }
+.district-group[hidden] { display: none; }
 .district-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
 .district-grid .check span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .district-grid .check { padding: 5px 6px; gap: 6px; }

@@ -3,7 +3,8 @@ import { state } from './state.js';
 
 export function districtLabel(n) {
   const d = state.config?.districts.find((x) => x.number === n);
-  return d ? `${n}. ${d.name}` : null;
+  if (!d) return null;
+  return d.state === 'wien' ? `${n}. ${d.name}` : d.name;
 }
 
 export const stateName = (id) => (id ? t(`state.${id}`) : null);

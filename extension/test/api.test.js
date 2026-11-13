@@ -38,8 +38,9 @@ test('creating a search scans it and stores its results', async () => {
 });
 
 test('a search with every state ticked scans all of Austria and stores its results', async () => {
-  const everything = (await dispatch('config')).states.map((s) => s.id);
-  const prefs = { states: everything, districts: Array.from({ length: 23 }, (_, i) => i + 1), types: ['apartment'], categories: ['regular'], sources: ['willhaben'] };
+  const config = await dispatch('config');
+  const everything = config.states.map((s) => s.id);
+  const prefs = { states: everything, districts: config.districts.map((d) => d.number), types: ['apartment'], categories: ['regular'], sources: ['willhaben'] };
   const { search } = await dispatch('saveSearch', { name: 'Österreich', prefs });
   await idle();
   const view = await dispatch('listings', { id: search.id });

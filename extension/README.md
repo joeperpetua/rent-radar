@@ -45,7 +45,7 @@ The store links live in `STORES` in `landing/guides.js` and point at the two lis
 
 The release carries the store links and three files: the chromium zip, the firefox zip that goes to AMO, and the same firefox zip named `.xpi`. The `.xpi` is unsigned, so it installs only in Firefox Developer Edition or Nightly with `xpinstall.signatures.required` set to false; release Firefox takes only the copy AMO signed. There is no `.crx`, because a Chromium zip renamed to `.crx` has no CRX header and Chrome rejects it. Packing a real one needs a private key in a repository secret.
 
-The run pushes to `main`, so it needs the repository setting Actions, General, Workflow permissions set to read and write.
+The run pushes to `main` with the built-in `GITHUB_TOKEN`. The workflow asks for `contents: write`, which overrides a read-only default under Actions, General, Workflow permissions, so that setting needs no change. A branch protection rule on `main` would block the push; `main` is unprotected today.
 
 ## Store images
 

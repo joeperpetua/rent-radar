@@ -37,7 +37,7 @@ npm run build:firefox minor
 - **chromium**: `src/manifest.json` unchanged (service worker background). Upload to the Chrome Web Store; Edge, Brave, Vivaldi, Kiwi, Quetta and Orion install from there.
 - **firefox**: `background.scripts` instead of `service_worker`, no `minimum_chrome_version`, plus `browser_specific_settings` (gecko id `rentradar-austria@joeperpetua`, min 128 on desktop and Android, `data_collection_permissions: none`). Upload to addons.mozilla.org; AMO signs it. `gecko_android` makes it listable for Firefox on Android. AMO warns that `data_collection_permissions` needs Firefox 140 (Android 142) while the floor is 128; the warning is expected and harmless, because older Firefox ignores the key. Raising the floor would drop 128-139 and iOS Orion. AMO also warns on every `innerHTML` template in `src/app/`; each one escapes its values with `esc()` from `format.js`.
 
-The store links live in `STORES` in `landing/guides.js`. They point to store searches for "RentRadar Austria" until the listings exist; swap in the listing URLs once published.
+The store links live in `STORES` in `landing/guides.js` and point at the two listings: the Chrome Web Store and `addons.mozilla.org/firefox/addon/rentradar/`.
 
 ## Release
 

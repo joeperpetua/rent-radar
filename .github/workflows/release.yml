@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: Version bump
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: extension
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release from main only
+        if: github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          echo "This workflow releases from main. Selected ref: ${{ github.ref }}"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Build both targets
+        id: build
+        env:
+          LEVEL: ${{ inputs.level }}
+        run: |
+          npm run build -- "$LEVEL"
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          cp "dist/rentradar-firefox-$version.zip" "dist/rentradar-firefox-$version.xpi"
+
+      - name: Commit the version and tag it
+        env:
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(release): bump version to $VERSION"
+          git tag -a "v$VERSION" -m "RentRadar Austria $VERSION"
+          git push origin HEAD:main --follow-tags
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          cat > "$notes" <<'EOF'
+          ### Install
+
+          - Chrome, Edge, Brave and other Chromium browsers: [Chrome Web Store](https://chromewebstore.google.com/detail/fbknlkhcgimpehjafnhgdceejiihibfi)
+          - Firefox on desktop and Android, and Orion on iOS: [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/rentradar/)
+          - Install guide for each browser: [joeperpetua.github.io/rent-radar](https://joeperpetua.github.io/rent-radar/)
+
+          ### Files
+
+          The store builds come from this code. The files below are for sideloading and for review.
+
+          - `rentradar-chromium-<version>.zip`: unzip it, then load it in Chrome under Extensions, Developer mode, Load unpacked.
+          - `rentradar-firefox-<version>.xpi`: installs in Firefox Developer Edition or Nightly with `xpinstall.signatures.required` set to false. Release Firefox installs only the copy that Firefox Add-ons signed.
+          - `rentradar-firefox-<version>.zip`: the file uploaded to Firefox Add-ons.
+          EOF
+          gh release create "v$VERSION" \
+            --title "RentRadar $VERSION" \
+            --notes-file "$notes" \
+            --generate-notes \
+            "dist/rentradar-chromium-$VERSION.zip#Chrome and Edge (load unpacked)" \
+            "dist/rentradar-firefox-$VERSION.xpi#Firefox (unsigned)" \
+            "dist/rentradar-firefox-$VERSION.zip#Firefox Add-ons upload"

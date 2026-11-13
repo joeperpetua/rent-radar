@@ -130,12 +130,13 @@ export const handlers = {
     const listing = await getListing(id);
     if (!listing) throw new ApiError('listing not found');
     const source = SOURCES[listing.source];
-    if (!source?.fetchDetails) return { description: listing.description };
+    if (!source?.fetchDetails) return { description: listing.description, sections: listing.sections ?? null, deposit: listing.deposit ?? null };
     const details = await source.fetchDetails(listing.url);
     if (details) {
       const patch = { detailsAt: new Date().toISOString() };
       if (details.description) patch.description = details.description;
       if (typeof details.reserved === 'boolean') patch.reserved = details.reserved;
+      if (Array.isArray(details.sections)) patch.sections = details.sections;
       if (details.sourceUrl) {
         patch.sourceUrl = details.sourceUrl;
         patch.sourceHost = details.sourceHost;
@@ -147,9 +148,9 @@ export const handlers = {
       if (details.agency) patch.agency = details.agency;
       if (details.images?.length) patch.images = details.images;
       await updateListingData(id, patch);
-      return { description: details.description ?? listing.description };
+      return { description: details.description ?? listing.description, sections: details.sections ?? listing.sections ?? null, deposit: details.deposit ?? listing.deposit ?? null };
     }
-    return { description: listing.description };
+    return { description: listing.description, sections: listing.sections ?? null, deposit: listing.deposit ?? null };
   },
 };
 

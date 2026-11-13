@@ -1,5 +1,5 @@
 import { fetchText, htmlToText, sleep } from '../http.js';
-import { districtFromPostcode, searchRegions, stateFromPostcode, stateIdFromName, toNumber } from '../geo.js';
+import { districtFromPostcode, financingContribution, searchRegions, stateFromPostcode, stateIdFromName, toNumber } from '../geo.js';
 
 const BASE = 'https://www.willhaben.at';
 const IMAGE_BASE = 'https://cache.willhaben.at/mmo/';
@@ -13,6 +13,10 @@ const MAX_PAGES = 15;
 const DETAIL_CONCURRENCY = 3;
 const MAX_DETAIL_FETCHES_PER_RUN = 120;
 const DETAIL_RECHECK_MS = 12 * 60 * 60 * 1000;
+const SECTION_PREFIX = 'GENERAL_TEXT_ADVERT/';
+const SECTION_TITLES = { 'Preis - Detailinformation': 'Preis und Detailinformation' };
+const SECTION_ORDER = ['Lage', 'Ausstattung', 'Zusatzinformationen', 'Preis und Detailinformation'];
+const sectionRank = (title) => (SECTION_ORDER.includes(title) ? SECTION_ORDER.indexOf(title) : SECTION_ORDER.length);
 
 export const id = 'willhaben';
 export const label = 'willhaben';
@@ -103,6 +107,22 @@ export async function search(prefs, { onProgress = () => {}, stored } = {}) {
   return listings;
 }
 
+const sectionItems = (html) => (htmlToText(html) ?? '')
+  .split('\n')
+  .map((line) => line.replace(/^•\s*/, '').replace(/^([^:]+?)\s*:\s*(?!\/)/, '$1: ').trim())
+  .filter(Boolean);
+
+export function parseSections(attributes) {
+  return (attributes ?? [])
+    .filter((a) => a.name?.startsWith(SECTION_PREFIX))
+    .map((a) => {
+      const title = a.name.slice(SECTION_PREFIX.length).trim();
+      return { title: SECTION_TITLES[title] ?? title, items: (a.values ?? []).flatMap(sectionItems) };
+    })
+    .filter((section) => section.title && section.items.length)
+    .sort((a, b) => sectionRank(a.title) - sectionRank(b.title));
+}
+
 export function parseDetails(html) {
   if (!html) return null;
   const m = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s.exec(html);
@@ -111,12 +131,15 @@ export function parseDetails(html) {
     const data = JSON.parse(m[1]);
     const ad = data?.props?.pageProps?.advertDetails;
     if (!ad) return { inactive: true };
-    const descAttr = ad.attributes?.attribute?.find((a) => a.name === 'DESCRIPTION');
-    const rawDesc = descAttr?.values?.[0];
+    const attributes = ad.attributes?.attribute ?? [];
+    const rawDesc = attributes.find((a) => a.name === 'DESCRIPTION')?.values?.[0];
+    const sections = parseSections(attributes);
     return {
       inactive: false,
       reserved: ad.advertStatus?.id === 'reserved',
       description: rawDesc ? htmlToText(rawDesc) : null,
+      sections,
+      deposit: sections.flatMap((section) => section.items).map(financingContribution).find(Boolean) ?? null,
     };
   } catch {
     return null;
@@ -143,7 +166,9 @@ export async function addDetails(listings, stored) {
     listing.description = known.description;
     listing.detailsAt = known.detailsAt ?? new Date().toISOString();
     if (typeof known.reserved === 'boolean') listing.reserved = known.reserved;
-    if (Date.parse(listing.detailsAt) < cutoff) stale.push(listing);
+    if (Array.isArray(known.sections)) listing.sections = known.sections;
+    if (listing.deposit == null && known.deposit != null) listing.deposit = known.deposit;
+    if (!Array.isArray(known.sections) || Date.parse(listing.detailsAt) < cutoff) stale.push(listing);
   }
   stale.sort((a, b) => a.detailsAt.localeCompare(b.detailsAt));
 
@@ -157,6 +182,8 @@ export async function addDetails(listings, stored) {
         if (details && !details.inactive) {
           if (details.description) listing.description = details.description;
           if (typeof details.reserved === 'boolean') listing.reserved = details.reserved;
+          listing.sections = details.sections;
+          if (details.deposit != null) listing.deposit = details.deposit;
           if (details.description || typeof details.reserved === 'boolean') listing.detailsAt = new Date().toISOString();
         }
       } catch {

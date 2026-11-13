@@ -51,6 +51,27 @@ const RESERVED_HTML = `<!DOCTYPE html><html><head>
 }
 </script></head><body></body></html>`;
 
+const SECTIONS_HTML = `<!DOCTYPE html><html><head>
+<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+  props: {
+    pageProps: {
+      advertDetails: {
+        id: 996773079,
+        attributes: {
+          attribute: [
+            { name: 'DESCRIPTION', values: ['Geräumige 3-Zimmer-Wohnung.'] },
+            { name: 'GENERAL_TEXT_ADVERT/Ausstattung', values: ['<ul><li>Terrassenanzahl:1</li><li>Heizung: Zentralheizung</li><li>Heizungsart: Fernwärme</li></ul>'] },
+            { name: 'GENERAL_TEXT_ADVERT/Lage', values: ['Nähe Hirschtettner Badeteich'] },
+            { name: 'GENERAL_TEXT_ADVERT/Preis - Detailinformation', values: ['<ul><li>Gesamtbelastung (exkl. MWSt): 609,89 Eur</li><li>Finanzierungsbeitrag: EUR 28 373,13</li></ul>'] },
+            { name: 'GENERAL_TEXT_ADVERT/Zusatzinformationen', values: ['<ul><li>Wohnungsnummer: 5</li><li>Anzahl Badezimmer: 1</li><li>Energiepass gültig bis: 20.01.2031</li><li>Verfügbar ab: sofort</li><li>Anzahl WC: 1</li></ul>'] },
+            { name: 'GENERAL_TEXT_ADVERT/Leer', values: ['<ul></ul>'] },
+          ],
+        },
+      },
+    },
+  },
+})}</script></head><body></body></html>`;
+
 const NO_NEXT_DATA_HTML = '<!DOCTYPE html><html><body><h1>Not Found</h1></body></html>';
 
 test('extracts full description from active willhaben detail page', () => {
@@ -78,7 +99,7 @@ test('returns null when __NEXT_DATA__ script is missing', () => {
 test('addDetails reuses cached description from stored listings without fetching', async () => {
   const detailsAt = new Date().toISOString();
   const stored = new Map([
-    ['willhaben:1', { description: 'Complete stored description', detailsAt, reserved: true }],
+    ['willhaben:1', { description: 'Complete stored description', detailsAt, reserved: true, sections: [] }],
   ]);
   const listings = [
     { id: 'willhaben:1', url: 'https://www.willhaben.at/iad/object?adId=1', description: 'Truncated...' },
@@ -112,4 +133,45 @@ test('addDetails rechecks stale listings so a newly reserved ad is picked up', a
   assert.equal(listings[0].reserved, true);
   assert.equal(listings[0].description, 'Maisonette mit zwei Schlafzimmern.');
   assert.notEqual(listings[0].detailsAt, '2026-11-06T10:00:00Z');
+});
+
+test('reads the extra text sections and the financing contribution from the detail page', () => {
+  const details = parseDetails(SECTIONS_HTML);
+  assert.deepEqual(details.sections, [
+    { title: 'Lage', items: ['Nähe Hirschtettner Badeteich'] },
+    { title: 'Ausstattung', items: ['Terrassenanzahl: 1', 'Heizung: Zentralheizung', 'Heizungsart: Fernwärme'] },
+    { title: 'Zusatzinformationen', items: ['Wohnungsnummer: 5', 'Anzahl Badezimmer: 1', 'Energiepass gültig bis: 20.01.2031', 'Verfügbar ab: sofort', 'Anzahl WC: 1'] },
+    { title: 'Preis und Detailinformation', items: ['Gesamtbelastung (exkl. MWSt): 609,89 Eur', 'Finanzierungsbeitrag: EUR 28 373,13'] },
+  ]);
+  assert.equal(details.deposit, 28373.13);
+  assert.deepEqual(parseDetails(ACTIVE_HTML).sections, []);
+  assert.equal(parseDetails(ACTIVE_HTML).deposit, null);
+});
+
+test('addDetails keeps stored sections and fetches them for listings detailed before sections existed', async () => {
+  const detailsAt = new Date().toISOString();
+  const sections = [{ title: 'Lage', items: ['Zentral'] }];
+  const stored = new Map([
+    ['willhaben:1', { description: 'Stored one', detailsAt, sections, deposit: 12000 }],
+    ['willhaben:2', { description: 'Stored two', detailsAt }],
+  ]);
+  const listings = [
+    { id: 'willhaben:1', url: 'https://www.willhaben.at/iad/object?adId=1', description: 'x' },
+    { id: 'willhaben:2', url: 'https://www.willhaben.at/iad/object?adId=2', description: 'y' },
+  ];
+  const fetched = [];
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    fetched.push(url);
+    return { ok: true, status: 200, url, text: async () => SECTIONS_HTML };
+  };
+  try {
+    await addDetails(listings, stored);
+  } finally {
+    globalThis.fetch = fetch;
+  }
+  assert.deepEqual(fetched, ['https://www.willhaben.at/iad/object?adId=2']);
+  assert.deepEqual([listings[0].sections, listings[0].deposit], [sections, 12000]);
+  assert.equal(listings[1].sections.length, 4);
+  assert.equal(listings[1].deposit, 28373.13);
 });

@@ -2,7 +2,7 @@ import { clusters, groupsFromClusters } from './dedup.js';
 import { groupCategories } from './categories.js';
 import { getGroupCache, putGroupCache, querySearchListings } from './db.js';
 
-const CACHE_FORMAT = 2;
+const CACHE_FORMAT = 4;
 
 function priceChange(group, histories) {
   for (const s of group.sources) {

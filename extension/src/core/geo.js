@@ -82,3 +82,9 @@ export function toNumber(value) {
   const n = Number.parseFloat(normalized);
   return Number.isFinite(n) ? n : null;
 }
+
+export function financingContribution(text) {
+  const m = /Finanzierungsbeitrag[^0-9]*?(\d{1,3}(?:[.\s  ]\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)/i.exec(text ?? '');
+  const n = m ? toNumber(m[1]) : null;
+  return n > 0 ? n : null;
+}

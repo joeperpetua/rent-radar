@@ -34,7 +34,7 @@ test('derstandard reads entries and matching project units from the flight data'
     location: { city: 'Wien', zipCode: '1220' },
     media: { images: [{ path: 'https://ic.ds.at/g/1.jpg' }] },
     properties: [
-      { matching: true, property: { id: '15313553', title: 'Studio 38. Etage', property: { costs: { main: { type: 'GROSS', value: 1150 } }, areas: { details: [{ kind: 'LIVING_SPACE', value: 34.17 }, { kind: 'ROOM_COUNT', value: 1 }] } } } },
+      { matching: true, property: { id: '15313553', title: 'Studio 38. Etage', property: { costs: { details: [{ kind: 'FREE_TEXT_PRICE', text: 'Finanzierungsbeitrag: € 28 373,13' }], main: { type: 'GROSS', value: 1150 } }, areas: { details: [{ kind: 'LIVING_SPACE', value: 34.17 }, { kind: 'ROOM_COUNT', value: 1 }] } } } },
       { matching: false, property: { id: '1', title: 'x', property: {} } },
     ],
   };
@@ -47,7 +47,7 @@ test('derstandard reads entries and matching project units from the flight data'
   assert.deepEqual([a.price, a.area, a.rooms, a.deposit, a.postcode, a.district, a.city], [1550, 72, 2, 4800, '1030', 3, 'Wien']);
   assert.equal(a.agency, 'Dr. Vospernik Immobilien GmbH');
   assert.equal(a.images.length, 2);
-  assert.deepEqual([b.id, b.price, b.area, b.postcode, b.images[0]], ['derstandard:15313553', 1150, 34.17, '1220', 'https://ic.ds.at/g/1.jpg']);
+  assert.deepEqual([b.id, b.price, b.area, b.deposit, b.postcode, b.images[0]], ['derstandard:15313553', 1150, 34.17, 28373.13, '1220', 'https://ic.ds.at/g/1.jpg']);
 });
 
 test('derstandard puts prefs in the search url', () => {

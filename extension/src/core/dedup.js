@@ -301,6 +301,7 @@ function buildGroup(members) {
     deposit: first('deposit'),
     floor: first('floor'),
     extras: [...new Set(members.flatMap((m) => m.extras ?? []))],
+    sections: ordered.find((m) => m.sections?.length)?.sections ?? [],
     reserved: members.some(isReserved),
     portals: new Set(members.map((m) => m.source)).size,
     sources: ordered.map((m) => ({
@@ -317,6 +318,7 @@ function buildGroup(members) {
       sourceName: m.sourceName ?? null,
       agency: m.agency ?? null,
       reserved: isReserved(m),
+      detailed: Array.isArray(m.sections),
     })),
   };
 }

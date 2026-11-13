@@ -1,5 +1,5 @@
 import { extractJsonObject, fetchText } from '../http.js';
-import { toNumber } from '../geo.js';
+import { financingContribution, toNumber } from '../geo.js';
 import { applyPrefs, locate } from './crawl.js';
 
 export const id = 'derstandard';
@@ -60,6 +60,7 @@ function toListing(entry, group = null) {
     : cost(p.costs, ['TOTAL_RENT', 'BASE_RENT_PLUS_UTILITIES', 'TOTAL_COSTS', 'MONTHLY_COSTS']) ?? main?.value ?? null;
   const depositRaw = cost(p.costs, ['DEPOSIT']);
   const deposit = depositRaw != null && depositRaw <= 12 && price ? Math.round(depositRaw * price * 100) / 100 : depositRaw;
+  const financing = p.costs?.details?.map((d) => financingContribution(d.text)).find(Boolean) ?? null;
   const location = p.location ?? group?.location ?? {};
   const company = (entry.advertiser ?? group?.advertiser)?.company;
   const images = (entry.media ?? group?.media)?.images?.map((i) => i.path).filter(Boolean) ?? [];
@@ -75,7 +76,7 @@ function toListing(entry, group = null) {
     price,
     area: area(p.areas, 'LIVING_SPACE') ?? area(p.areas, 'USABLE_SPACE') ?? p.areas?.main?.value ?? null,
     rooms: area(p.areas, 'ROOM_COUNT'),
-    deposit,
+    deposit: deposit ?? financing,
     ...locate({ postcode: location.zipCode, city: location.city, street: location.street }),
     lat: null,
     lng: null,

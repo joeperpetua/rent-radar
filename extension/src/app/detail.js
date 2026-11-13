@@ -8,6 +8,7 @@ import { toggleFav } from './favorites.js';
 import { bindGallery, galleryHtml } from './gallery.js';
 import { setupRating } from './ratingPanel.js';
 import { setupTranslation } from './translationPanel.js';
+import { sectionsHtml } from './sections.js';
 import { loadFavorites } from './favoritesView.js';
 
 function findGroup(id) {
@@ -43,19 +44,10 @@ function priceHistoryHtml(g) {
     </div>`;
 }
 
-export function renderDetail(id) {
-  const g = findGroup(id);
-  const el = $('#detail-view');
-  if (!g) {
-    const pending = !state.data || !state.favData;
-    el.innerHTML = `<div class="detail"><div class="empty">${esc(pending ? t('loading') : t('notAvailable'))}</div></div>`;
-    if (!state.favData) loadFavorites();
-    return;
-  }
+function factsHtml(g) {
   const priceDiffers = g.priceMin != null && g.priceMax - g.priceMin >= 1;
-  const features = [...new Set(g.extras.map(feature).filter(Boolean))];
   const advertiser = g.isPrivate ? t('private') : g.agency ?? (g.isPrivate === false ? t('agency') : '–');
-  const facts = [
+  return [
     ['fact.rent', euro(g.price, 2)],
     g.priceChange && ['fact.priceChange', `${signedEuro(g.priceChange.delta)} (${g.priceChange.pct > 0 ? '+' : g.priceChange.pct < 0 ? '−' : ''}${num(Math.abs(g.priceChange.pct), 1)} %) · ${fmtDay(g.priceChange.at)}`],
     priceDiffers && ['fact.priceRange', `${euro(g.priceMin)} – ${euro(g.priceMax)}`],
@@ -67,13 +59,27 @@ export function renderDetail(id) {
     g.state === 'wien' && g.district
       ? ['fact.district', districtLabel(g.district)]
       : ['fact.place', [g.postcode, g.city].filter(Boolean).join(' ') || '–'],
+    g.state !== 'wien' && g.district && ['fact.district', districtLabel(g.district)],
     g.state && ['fact.region', stateName(g.state)],
     g.floor && ['fact.floor', g.floor],
     ['fact.advertiser', advertiser],
     g.deposit && ['fact.deposit', euro(g.deposit, 2)],
     ['fact.published', fmtDate(g.publishedAt)],
     ['fact.firstSeen', fmtDate(g.firstSeen)],
-  ].filter(Boolean);
+  ].filter(Boolean).map(([k, v]) => `<div><dt>${esc(t(k))}</dt><dd>${esc(v)}</dd></div>`).join('');
+}
+
+export function renderDetail(id) {
+  const g = findGroup(id);
+  const el = $('#detail-view');
+  if (!g) {
+    const pending = !state.data || !state.favData;
+    el.innerHTML = `<div class="detail"><div class="empty">${esc(pending ? t('loading') : t('notAvailable'))}</div></div>`;
+    if (!state.favData) loadFavorites();
+    return;
+  }
+  const priceDiffers = g.priceMin != null && g.priceMax - g.priceMin >= 1;
+  const features = [...new Set(g.extras.map(feature).filter(Boolean))];
 
   const mapQuery = g.lat != null ? `${g.lat},${g.lng}` : `${g.address ?? g.city ?? ''}, Österreich`;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
@@ -92,7 +98,7 @@ export function renderDetail(id) {
           </div>
           ${g.reserved ? `<p class="reserved-note">${icon('lock')}<strong>${esc(t('badgeReserved'))}</strong><span>${esc(t('reservedHint'))}</span></p>` : ''}
           <div class="address">${esc(g.address ?? '')}</div>
-          <dl class="keyfacts">${facts.map(([k, v]) => `<div><dt>${esc(t(k))}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+          <dl class="keyfacts" id="keyfacts">${factsHtml(g)}</dl>
           ${features.length ? `<div class="panel"><h2>${esc(t('features'))}</h2><p class="description">${esc(features.join(' · '))}</p></div>` : ''}
           <div class="panel" id="description-panel">
             <div class="panel-head">
@@ -102,6 +108,7 @@ export function renderDetail(id) {
             <p class="description" id="description-text">${esc(g.description || t('noDescription'))}</p>
             <p class="note" id="translate-note"></p>
           </div>
+          <div id="detail-sections">${sectionsHtml(g.sections)}</div>
         </div>
         <aside>
           <div class="panel">
@@ -155,15 +162,30 @@ export function renderDetail(id) {
   bindGallery(el, g);
   setupTranslation(g);
   setupRating(g);
-  ensureFullDescription(g);
+  ensureDetails(g);
 }
 
-async function ensureFullDescription(g) {
-  if (g.description && !g.description.endsWith('...')) return;
-  const sourceWithDetail = g.sources.find((s) => s.source === 'willhaben');
+async function ensureDetails(g) {
+  const truncated = !g.description || g.description.endsWith('...');
+  const sourceWithDetail = g.sources.find((s) => s.source === 'willhaben' && (truncated || !s.detailed));
   if (!sourceWithDetail) return;
   try {
     const res = await api('fetchDetail', { id: sourceWithDetail.id });
+    sourceWithDetail.detailed = true;
+    const shown = state.detailShown === g.id;
+    if (!g.sections?.length && res?.sections?.length) {
+      g.sections = res.sections;
+      const box = $('#detail-sections');
+      if (box && shown) {
+        box.innerHTML = sectionsHtml(g.sections);
+        setupTranslation(g);
+      }
+    }
+    if (g.deposit == null && res?.deposit) {
+      g.deposit = res.deposit;
+      const facts = $('#keyfacts');
+      if (facts && shown) facts.innerHTML = factsHtml(g);
+    }
     if (res?.description && res.description !== g.description) {
       g.description = res.description;
       const text = $('#description-text');

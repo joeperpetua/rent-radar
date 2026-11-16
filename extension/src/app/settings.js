@@ -1,12 +1,13 @@
 import { t } from './i18n.js';
 import { $, placeMenu, withTransition } from './dom.js';
 import { fmtBytes, num } from './format.js';
-import { api, scanIdle, state } from './state.js';
+import { VIEW_DEFAULTS, api, scanIdle, state } from './state.js';
 import { askConfirm, bindModal } from './modal.js';
-import { refreshSearches } from './searches.js';
+import { refreshSearches, selectSearch } from './searches.js';
 import { loadListings } from './list.js';
 import { detailId, favoritesRoute, route } from './router.js';
 import { loadFavorites } from './favoritesView.js';
+import { BACKUP_EXTENSION, InvalidBackupFile, decodeBackup, encodeBackup } from '../core/backupFile.js';
 
 const SETTINGS_MENU_WIDTH = 320;
 const STYLE_KEY = 'rentradar-style';
@@ -96,16 +97,83 @@ async function confirmClear() {
   if (confirmed) await storageAction('clearListings');
 }
 
-export function bindSettings() {
+export function renderBackup() {
+  $('#export-backup').disabled = state.backupBusy;
+  $('#import-backup').disabled = state.backupBusy || !scanIdle();
+  $('#backup-hint').textContent = !scanIdle() ? t('storageScanning') : state.backupHint;
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function backupAction(fn) {
+  state.backupBusy = true;
+  state.backupHint = '';
+  renderBackup();
+  try {
+    state.backupHint = await fn();
+  } catch (err) {
+    state.backupHint = err instanceof InvalidBackupFile ? t('importInvalid') : `${t('error')}: ${err.message}`;
+  } finally {
+    state.backupBusy = false;
+    renderBackup();
+  }
+}
+
+const exportBackup = () => backupAction(async () => {
+  const backup = await api('exportBackup');
+  download(await encodeBackup(backup), `rentradar-backup-${backup.exportedAt.slice(0, 10)}.${BACKUP_EXTENSION}`);
+  return t('exportDone', { s: num(backup.searches.length), f: num(backup.favorites.length) });
+});
+
+const importBackup = (file, applyLang) => backupAction(async () => {
+  const result = await api('importBackup', await decodeBackup(await file.arrayBuffer()));
+  const { settings } = result;
+  applyStyle(settings.style);
+  applyTheme(settings.theme);
+  state.view = { ...VIEW_DEFAULTS, ...settings.view };
+  state.favorites = new Set(result.favorites);
+  state.searches = result.searches;
+  if (settings.locale) applyLang(settings.locale);
+  if (state.activeId == null && state.searches.length) await selectSearch(state.searches[0].id);
+  await reloadData();
+  loadStorage();
+  const skipped = result.skipped.searches + result.skipped.favorites;
+  const done = t('importDone', { s: num(result.added.searches), f: num(result.added.favorites) });
+  return skipped ? `${done}. ${t('importSkipped', { n: num(skipped) })}` : done;
+});
+
+export function bindSettings(applyLang) {
   $('#settings-menu').addEventListener('beforetoggle', (e) => {
     if (e.newState !== 'open') return;
     placeSettingsMenu();
+    if (!state.backupBusy) state.backupHint = '';
+    renderBackup();
     if (state.storageBusy) return;
     state.storageHint = '';
     renderStorage();
     loadStorage();
   });
   $('#prune-listings').addEventListener('click', () => storageAction('pruneListings'));
+  $('#export-backup').addEventListener('click', exportBackup);
+  $('#import-backup').addEventListener('click', () => $('#import-file').click());
+  $('#import-file').addEventListener('change', async (e) => {
+    const [file] = e.target.files;
+    e.target.value = '';
+    if (!file) return;
+    const menu = $('#settings-menu');
+    const done = importBackup(file, applyLang);
+    if (!menu.matches(':popover-open')) menu.showPopover();
+    await done;
+  });
   $('#clear-listings').addEventListener('click', confirmClear);
   $('#settings-menu').addEventListener('click', (e) => {
     if (e.target.matches('input[name="style"]')) switchStyle(e.target.value);

@@ -13,7 +13,7 @@ import { bindSearches, placeSearchMenu, renderSearchList } from './searches.js';
 import { bindPrefs, renderPrefs } from './prefs.js';
 import { bindRefresh, onScanStatus, renderStatus } from './status.js';
 import { renderToasts } from './toasts.js';
-import { applyStyle, applyTheme, bindSettings, placeSettingsMenu, renderStorage } from './settings.js';
+import { applyStyle, applyTheme, bindSettings, placeSettingsMenu, renderBackup, renderStorage } from './settings.js';
 import { bindPullToRefresh } from './pullToRefresh.js';
 
 const CLOCK_TICK_MS = 60 * 1000;
@@ -26,6 +26,7 @@ function renderAll() {
   renderStatus();
   renderToasts();
   if (state.storage) renderStorage();
+  renderBackup();
   const id = detailId();
   if (id) renderDetail(decodeURIComponent(id));
   else if (favoritesRoute()) renderFavorites();
@@ -61,7 +62,7 @@ function bindEvents() {
   bindRefresh();
   bindPullToRefresh();
   bindSearches();
-  bindSettings();
+  bindSettings(applyLang);
   bindPrefs();
   bindNavigation();
   bindList();

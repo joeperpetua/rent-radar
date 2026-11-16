@@ -5,7 +5,7 @@ import { esc, fmtDate, num, relTime } from './format.js';
 import { SOURCE_LABELS, activeSearch, api, isQueued, isScanning, state } from './state.js';
 import { renderSourceCounts } from './prefs.js';
 import { renderToasts } from './toasts.js';
-import { loadStorage, renderStorage } from './settings.js';
+import { loadStorage, renderBackup, renderStorage } from './settings.js';
 import { refreshSearches } from './searches.js';
 import { loadListings, renderList } from './list.js';
 import { detailId, favoritesRoute } from './router.js';
@@ -64,6 +64,7 @@ export async function onScanStatus(status) {
   if ($('#settings-menu').matches(':popover-open')) {
     if (finished) loadStorage();
     else renderStorage();
+    renderBackup();
   }
   if (finished || queueChanged) await refreshSearches();
   renderStatus();

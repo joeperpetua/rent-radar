@@ -260,6 +260,21 @@ function latestPrice(prices) {
   return prices.reduce((latest, p) => (!latest || p.at > latest.at ? p : latest), null)?.price;
 }
 
+const listingRow = (data, firstSeen, lastSeen, prices) => ({
+  id: data.id,
+  source: data.source,
+  type: data.type ?? 'apartment',
+  state: data.state ?? null,
+  price: data.price ?? null,
+  area: data.area ?? null,
+  rooms: data.rooms ?? null,
+  district: data.district ?? null,
+  data,
+  firstSeen,
+  lastSeen,
+  prices,
+});
+
 async function writeListing(t, searchId, listing, at) {
   const { firstSeen: _f, lastSeen: _l, ...rest } = listing;
   const data = { ...rest, district: listing.district ?? districtFor(listing) };
@@ -270,20 +285,7 @@ async function writeListing(t, searchId, listing, at) {
     prices.push({ at, price: listing.price });
     prices.sort((a, b) => a.at.localeCompare(b.at));
   }
-  listings.put({
-    id: listing.id,
-    source: listing.source,
-    type: listing.type ?? 'apartment',
-    state: listing.state ?? null,
-    price: listing.price ?? null,
-    area: listing.area ?? null,
-    rooms: listing.rooms ?? null,
-    district: data.district ?? null,
-    data,
-    firstSeen: existing?.firstSeen ?? at,
-    lastSeen: at,
-    prices,
-  });
+  listings.put(listingRow(data, existing?.firstSeen ?? at, at, prices));
   const members = t.objectStore(MEMBERS);
   const member = await req(members.get([searchId, listing.id]));
   members.put({ searchId, listingId: listing.id, source: listing.source, firstSeen: member?.firstSeen ?? at, lastSeen: at, removedAt: null });
@@ -461,3 +463,79 @@ export async function updateFavorites({ add = [], remove = [] }) {
   });
   return getFavorites();
 }
+
+export const backupData = () => read([SEARCHES, FAVORITES, LISTINGS, MEMBERS, SETTINGS], async (t) => {
+  const searches = await req(t.objectStore(SEARCHES).getAll());
+  searches.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+  const searchIds = new Set(searches.map((s) => s.id));
+  const favorites = (await req(t.objectStore(FAVORITES).getAll())).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const listings = t.objectStore(LISTINGS);
+  const members = t.objectStore(MEMBERS).index('listingId');
+  return {
+    settings: Object.fromEntries((await req(t.objectStore(SETTINGS).getAll())).map((r) => [r.key, r.value])),
+    searches: searches.map(({ id, name, prefs, createdAt }) => ({ id, name, prefs, createdAt })),
+    favorites: await Promise.all(favorites.map(async ({ listingId, createdAt }) => {
+      const row = await req(listings.get(listingId));
+      const found = await req(members.getAll(listingId));
+      return {
+        listingId,
+        createdAt,
+        listing: row ? { data: row.data, firstSeen: row.firstSeen, lastSeen: row.lastSeen, prices: row.prices } : null,
+        searches: found.filter((m) => searchIds.has(m.searchId)).map(({ searchId, firstSeen, lastSeen, removedAt }) => ({ searchId, firstSeen, lastSeen, removedAt })),
+      };
+    })),
+  };
+});
+
+const samePrefs = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+async function restoreSearches(t, searches, at) {
+  const store = t.objectStore(SEARCHES);
+  const existing = await req(store.getAll());
+  const ids = new Map();
+  let added = 0;
+  for (const s of searches) {
+    const same = existing.find((e) => e.name === s.name && samePrefs(e.prefs, s.prefs));
+    if (same) {
+      ids.set(s.id, same.id);
+      continue;
+    }
+    ids.set(s.id, await req(store.add({ name: s.name, prefs: s.prefs, createdAt: s.createdAt ?? at, updatedAt: at, scanScope: null })));
+    added++;
+  }
+  return { ids, added };
+}
+
+async function restoreFavorite(t, favorite, searchIds, at) {
+  const listings = t.objectStore(LISTINGS);
+  const id = favorite.listingId;
+  let row = await req(listings.get(id));
+  if (!row && favorite.listing) {
+    const { data, firstSeen, lastSeen, prices } = favorite.listing;
+    row = listingRow(data, firstSeen ?? at, lastSeen ?? at, prices);
+    listings.put(row);
+  }
+  if (!row) return false;
+  const members = t.objectStore(MEMBERS);
+  for (const m of favorite.searches) {
+    const searchId = searchIds.get(m.searchId);
+    if (searchId == null || await req(members.getKey([searchId, id]))) continue;
+    members.put({ searchId, listingId: id, source: row.source, firstSeen: m.firstSeen ?? at, lastSeen: m.lastSeen ?? at, removedAt: m.removedAt ?? null });
+  }
+  const store = t.objectStore(FAVORITES);
+  if (await req(store.getKey(id))) return false;
+  store.put({ listingId: id, createdAt: favorite.createdAt ?? at });
+  return true;
+}
+
+export const restoreBackup = ({ settings = {}, searches = [], favorites = [] }) => write([SEARCHES, FAVORITES, LISTINGS, MEMBERS, SETTINGS, META], async (t) => {
+  const at = now();
+  for (const [key, value] of Object.entries(settings)) t.objectStore(SETTINGS).put({ key, value });
+  const { ids, added } = await restoreSearches(t, searches, at);
+  let favoritesAdded = 0;
+  for (const favorite of favorites) {
+    if (await restoreFavorite(t, favorite, ids, at)) favoritesAdded++;
+  }
+  await bumpVersion(t);
+  return { searches: added, favorites: favoritesAdded };
+});

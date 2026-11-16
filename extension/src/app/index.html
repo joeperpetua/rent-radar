@@ -88,6 +88,16 @@
         </div>
         <p class="storage-hint" id="storage-hint" aria-live="polite"></p>
       </fieldset>
+      <fieldset class="settings-group backup" id="backup">
+        <legend data-i18n="backup">Sicherung</legend>
+        <p class="backup-text" data-i18n="backupText"></p>
+        <div class="storage-actions">
+          <button class="btn" type="button" id="export-backup"><i data-icon="download"></i><span data-i18n="exportBackup">Exportieren</span></button>
+          <button class="btn" type="button" id="import-backup"><i data-icon="upload"></i><span data-i18n="importBackup">Importieren</span></button>
+          <input type="file" id="import-file" hidden>
+        </div>
+        <p class="storage-hint" id="backup-hint" aria-live="polite"></p>
+      </fieldset>
     </div>
   </header>
 

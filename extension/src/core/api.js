@@ -1,6 +1,6 @@
 import { buildView, emptyView, enqueueScan, cancelQueued, isBusy, isIdle, scanStatus, SOURCES } from './scan.js';
 import { DEFAULT_PREFS, missingGroups, needsRescan, PROPERTY_TYPES, sanitizeName, sanitizePrefs } from './prefs.js';
-import { allSettings, clearListings, createSearch, deleteSearch, getFavorites, getListing, getSearch, listSearches, pruneListings, setSetting, storageInfo, updateFavorites, updateListingData, updateSearch } from './db.js';
+import { allSettings, backupData, clearListings, createSearch, deleteSearch, getFavorites, getListing, getSearch, listSearches, pruneListings, restoreBackup, setSetting, storageInfo, updateFavorites, updateListingData, updateSearch } from './db.js';
 import { DISTRICTS, STATES } from './geo.js';
 import { CATEGORIES } from './categories.js';
 
@@ -20,6 +20,71 @@ const SETTINGS = {
   autoRefreshMinutes: (v) => REFRESH_CHOICES.includes(v),
   view: (v) => v != null && typeof v === 'object' && !Array.isArray(v) && JSON.stringify(v).length < 4096,
 };
+
+export const BACKUP_APP = 'rentradar';
+export const BACKUP_FORMAT = 1;
+const BACKUP_SETTINGS = Object.keys(SETTINGS).filter((key) => key !== 'activeSearchId');
+const MAX_BACKUP_SEARCHES = 200;
+const MAX_BACKUP_FAVORITES = 5000;
+const MAX_LISTING_JSON = 500000;
+
+const isObject = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
+const isoTime = (v) => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null);
+const httpUrl = (v) => typeof v === 'string' && /^https?:\/\//i.test(v);
+
+function backupSettings(settings) {
+  if (!isObject(settings)) return {};
+  return Object.fromEntries(BACKUP_SETTINGS.filter((key) => Object.hasOwn(settings, key) && SETTINGS[key](settings[key])).map((key) => [key, settings[key]]));
+}
+
+function backupSearch(input) {
+  if (!isObject(input) || !Number.isInteger(input.id)) return null;
+  const name = sanitizeName(input.name);
+  const prefs = sanitizePrefs(isObject(input.prefs) ? input.prefs : {});
+  if (!name || missingGroups(prefs).length) return null;
+  return { id: input.id, name, prefs, createdAt: isoTime(input.createdAt) };
+}
+
+function backupListing(id, input) {
+  if (!isObject(input) || !isObject(input.data)) return null;
+  const { data } = input;
+  if (data.id !== id || !Object.hasOwn(SOURCES, data.source) || !httpUrl(data.url)) return null;
+  if (data.sourceUrl != null && !httpUrl(data.sourceUrl)) return null;
+  if (JSON.stringify(data).length > MAX_LISTING_JSON) return null;
+  const prices = (Array.isArray(input.prices) ? input.prices : [])
+    .filter((p) => isObject(p) && isoTime(p.at) && Number.isFinite(p.price))
+    .map((p) => ({ at: isoTime(p.at), price: p.price }))
+    .sort((a, b) => a.at.localeCompare(b.at));
+  return {
+    data: { ...data, images: (Array.isArray(data.images) ? data.images : []).filter(httpUrl) },
+    firstSeen: isoTime(input.firstSeen),
+    lastSeen: isoTime(input.lastSeen),
+    prices,
+  };
+}
+
+function backupFavorite(input) {
+  if (!isObject(input) || typeof input.listingId !== 'string' || !LISTING_ID.test(input.listingId)) return null;
+  const listing = input.listing == null ? null : backupListing(input.listingId, input.listing);
+  if (input.listing != null && !listing) return null;
+  const searches = (Array.isArray(input.searches) ? input.searches : [])
+    .filter((m) => isObject(m) && Number.isInteger(m.searchId))
+    .map((m) => ({ searchId: m.searchId, firstSeen: isoTime(m.firstSeen), lastSeen: isoTime(m.lastSeen), removedAt: isoTime(m.removedAt) }));
+  return { listingId: input.listingId, createdAt: isoTime(input.createdAt), listing, searches };
+}
+
+function parseBackup(input) {
+  if (!isObject(input) || input.app !== BACKUP_APP) throw new ApiError('not a RentRadar backup');
+  if (input.format !== BACKUP_FORMAT) throw new ApiError(`unsupported backup format ${input.format}`);
+  const searches = Array.isArray(input.searches) ? input.searches : [];
+  const favorites = Array.isArray(input.favorites) ? input.favorites : [];
+  if (searches.length > MAX_BACKUP_SEARCHES || favorites.length > MAX_BACKUP_FAVORITES) throw new ApiError('backup too large');
+  return {
+    settings: backupSettings(input.settings),
+    searches: searches.map(backupSearch).filter(Boolean),
+    favorites: favorites.map(backupFavorite).filter(Boolean),
+  };
+}
 
 async function requireSearch(id) {
   const search = await getSearch(Number(id));
@@ -50,12 +115,14 @@ function requireIdle() {
   if (!isIdle()) throw new ApiError('scan running');
 }
 
+const settingsWithDefaults = async () => ({ autoRefreshMinutes: 0, style: 'styled', theme: 'system', ...await allSettings() });
+
 const summary = (search) => ({ ...search, busy: isBusy(search.id) });
 
 export const handlers = {
   config: async () => ({
     searches: (await listSearches()).map(summary),
-    settings: { autoRefreshMinutes: 0, style: 'styled', theme: 'system', ...await allSettings() },
+    settings: await settingsWithDefaults(),
     favorites: await getFavorites(),
     defaults: DEFAULT_PREFS,
     refreshChoices: REFRESH_CHOICES,
@@ -118,6 +185,26 @@ export const handlers = {
   },
 
   favorites: async ({ add = [], remove = [] }) => ({ favorites: await updateFavorites({ add: listingIds(add), remove: listingIds(remove) }) }),
+
+  exportBackup: async () => {
+    const { settings, searches, favorites } = await backupData();
+    return { app: BACKUP_APP, format: BACKUP_FORMAT, exportedAt: new Date().toISOString(), settings: backupSettings(settings), searches, favorites };
+  },
+
+  importBackup: async (input) => {
+    requireIdle();
+    const backup = parseBackup(input);
+    return {
+      added: await restoreBackup(backup),
+      skipped: {
+        searches: (input.searches?.length ?? 0) - backup.searches.length,
+        favorites: (input.favorites?.length ?? 0) - backup.favorites.length,
+      },
+      settings: await settingsWithDefaults(),
+      searches: (await listSearches()).map(summary),
+      favorites: await getFavorites(),
+    };
+  },
 
   setSetting: async ({ key, value }) => {
     if (!Object.hasOwn(SETTINGS, key) || !SETTINGS[key](value)) throw new ApiError(`invalid setting ${key}`);

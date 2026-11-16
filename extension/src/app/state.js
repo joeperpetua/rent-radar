@@ -28,6 +28,8 @@ export const state = {
   storageBusy: false,
   storageHint: '',
   storageToken: 0,
+  backupBusy: false,
+  backupHint: '',
   listLimit: PAGE_SIZE,
   route: null,
   returnRoute: null,

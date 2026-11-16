@@ -2,9 +2,9 @@ import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 
 const NAMES = [
   'arrow-left', 'arrow-right', 'arrow-up-down', 'arrow-up-right', 'bookmark', 'bookmark-plus', 'brush-cleaning', 'chevron-down', 'chevron-left', 'chevron-right',
-  'circle-alert', 'circle-check', 'circle-dashed', 'clock', 'database', 'external-link', 'house', 'images', 'layers', 'list', 'loader-circle',
+  'circle-alert', 'circle-check', 'circle-dashed', 'clock', 'database', 'download', 'external-link', 'house', 'images', 'layers', 'list', 'loader-circle',
   'lock', 'map', 'map-pin', 'maximize-2', 'plus', 'radar', 'refresh-cw', 'save', 'search', 'search-x', 'sliders-horizontal',
-  'monitor', 'moon', 'settings', 'sparkles', 'star', 'sun', 'trash-2', 'trending-down', 'x',
+  'monitor', 'moon', 'settings', 'sparkles', 'star', 'sun', 'trash-2', 'trending-down', 'upload', 'x',
 ];
 const LUCIDE = new URL('../node_modules/lucide-static/', import.meta.url);
 const APP = new URL('../src/app/', import.meta.url);

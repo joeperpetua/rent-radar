@@ -1,13 +1,16 @@
-import { applyLang, setLang, t } from './i18n.js';
+import { applyLang, getLang, setLang, t } from './i18n.js';
 import { detect, GUIDES, STORES } from './guides.js';
 import { icon } from './icons.js';
 import { startRadar } from './radar.js';
 import { initTheme } from './theme.js';
+import { decodeShare, sharedPayload, teaser } from './share.js';
 
 const $ = (id) => document.getElementById(id);
 const env = detect();
 const guides = GUIDES[env.platform];
 let current = guides.find((g) => g.id === env.guide) ?? guides[0];
+const share = sharedPayload();
+let shared = null;
 
 function chip(text) {
   const button = document.createElement('button');
@@ -45,6 +48,9 @@ function renderGuide() {
 
   $('store').href = STORES[current.store];
   $('store-label').textContent = t(`store.${current.store}`);
+  $('shared-store').href = STORES[current.store];
+  $('shared-store').hidden = !env.supported;
+  $('shared-store-label').textContent = t(`store.${current.store}`);
 
   const get = $('get-browser');
   get.hidden = !current.get;
@@ -53,11 +59,57 @@ function renderGuide() {
     $('get-browser-label').textContent = t('get', { name: current.name.split(' ')[0] });
   }
 
-  $('steps').replaceChildren(...[...current.steps, 'step.auto'].map((key) => stepItem(t(key))));
+  $('steps').replaceChildren(...[...current.steps, share ? 'step.shared' : 'step.auto'].map((key) => stepItem(t(key))));
 
   const note = $('guide-note');
   note.hidden = !current.note;
   note.textContent = current.note ? t(current.note) : '';
+}
+
+function renderShared() {
+  if (!shared) return;
+  const locale = getLang() === 'de' ? 'de-AT' : 'en-GB';
+  const fmt = (n, digits = 0) => n.toLocaleString(locale, { maximumFractionDigits: digits });
+  $('shared-title').textContent = shared.title;
+  $('shared-facts').textContent = [
+    shared.price && `€ ${fmt(shared.price)}`,
+    shared.area && `${fmt(shared.area, 1)} m²`,
+    shared.rooms && t('rooms', { n: fmt(shared.rooms, 1) }),
+  ].filter(Boolean).join(' · ');
+  $('shared-place').textContent = shared.place ?? '';
+  $('shared-place').hidden = !shared.place;
+}
+
+async function loadShared() {
+  try {
+    shared = teaser(await decodeShare(share));
+  } catch {
+    shared = null;
+  }
+  if (!shared) return;
+  const photo = $('shared-photo');
+  if (shared.photo) {
+    $('shared-media').hidden = false;
+    photo.addEventListener('load', () => photo.classList.add('loaded'), { once: true });
+    photo.addEventListener('error', () => { $('shared-media').hidden = true; }, { once: true });
+    photo.src = shared.photo;
+  }
+  renderShared();
+  $('shared').showModal();
+  $('shared').focus();
+}
+
+function showSteps() {
+  $('shared').close();
+  document.querySelector('.action').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+if (share) {
+  $('share-cta').hidden = false;
+  $('installed-text').dataset.i18n = 'sharedOpening';
+  $('open-label').dataset.i18n = 'openListing';
+  document.body.dataset.shared = '';
+  loadShared();
 }
 
 applyLang();
@@ -71,6 +123,7 @@ $('lang-switch').addEventListener('click', (event) => {
   if (!next) return;
   setLang(next);
   renderGuide();
+  renderShared();
 });
 
 $('picker').addEventListener('click', (event) => {
@@ -94,7 +147,7 @@ $('steps').addEventListener('click', async (event) => {
 });
 
 const setState = (state) => { document.body.dataset.state = state; };
-const open = () => window.postMessage({ type: 'rentradar:open' }, location.origin);
+const open = () => window.postMessage({ type: 'rentradar:open', share }, location.origin);
 
 window.addEventListener('message', (event) => {
   if (event.source === window && event.data?.type === 'rentradar:stale') setState('stale');
@@ -102,5 +155,21 @@ window.addEventListener('message', (event) => {
 
 $('open').addEventListener('click', open);
 $('reload').addEventListener('click', () => location.reload());
+$('shared-open').addEventListener('click', open);
+$('shared-reload').addEventListener('click', () => location.reload());
+$('shared-steps').addEventListener('click', showSteps);
+$('shared-close').addEventListener('click', () => $('shared').close());
+$('shared').addEventListener('click', (event) => {
+  const box = event.currentTarget.getBoundingClientRect();
+  const outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+  if (event.target === event.currentTarget && outside) event.currentTarget.close();
+});
 
-setState(document.documentElement.dataset.rentradar ? 'installed' : 'missing');
+const installed = Boolean(document.documentElement.dataset.rentradar);
+setState(installed ? 'installed' : 'missing');
+const returning = performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
+if (share && installed && !returning) open();
+
+window.addEventListener('hashchange', () => {
+  if (sharedPayload() !== share) location.reload();
+});

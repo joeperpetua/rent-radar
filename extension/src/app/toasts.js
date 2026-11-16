@@ -7,6 +7,7 @@ import { STATE_ICONS, radarSearch } from './radar.js';
 
 const TOAST_LINGER_MS = 2500;
 const ERROR_TOAST_LINGER_MS = 20000;
+const NOTICE_LINGER_MS = 6000;
 
 function toastText(entry) {
   if (entry.state === 'running') return entry.count ? t('toast.loading', { n: entry.count }) : t('toast.loadingNone');
@@ -58,6 +59,24 @@ export function renderToasts() {
       ts.timers.push(setTimeout(() => dismissToast(key), entry.state === 'error' ? ERROR_TOAST_LINGER_MS : TOAST_LINGER_MS));
     }
   }
+}
+
+export function showNotice(text, name = 'circle-alert', kind = 'error') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.dataset.state = kind;
+  el.setAttribute('role', 'status');
+  el.innerHTML = `
+    <span class="toast-icon" aria-hidden="true">${icon(name)}</span>
+    <div class="toast-body"><span class="toast-text">${esc(text)}</span></div>
+    <button type="button" class="toast-close" aria-label="${esc(t('close'))}">${icon('x')}</button>`;
+  const remove = () => {
+    el.classList.add('leaving');
+    setTimeout(() => el.remove(), 250);
+  };
+  $('.toast-close', el).addEventListener('click', remove);
+  setTimeout(remove, NOTICE_LINGER_MS);
+  $('#toasts').append(el);
 }
 
 function dismissToast(key) {

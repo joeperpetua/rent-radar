@@ -3,6 +3,8 @@ import { DEFAULT_PREFS, missingGroups, needsRescan, PROPERTY_TYPES, sanitizeName
 import { allSettings, backupData, clearListings, createSearch, deleteSearch, getFavorites, getListing, getSearch, listSearches, pruneListings, restoreBackup, setSetting, storageInfo, updateFavorites, updateListingData, updateSearch } from './db.js';
 import { DISTRICTS, STATES } from './geo.js';
 import { CATEGORIES } from './categories.js';
+import { sharedGroup } from './groups.js';
+import { SHARE_FORMAT } from './share.js';
 
 const LISTING_ID = /^([a-z0-9_-]+):\S{1,200}$/;
 const LOCALES = ['de', 'en'];
@@ -27,6 +29,7 @@ const BACKUP_SETTINGS = Object.keys(SETTINGS).filter((key) => key !== 'activeSea
 const MAX_BACKUP_SEARCHES = 200;
 const MAX_BACKUP_FAVORITES = 5000;
 const MAX_LISTING_JSON = 500000;
+const MAX_SHARED_LISTINGS = 20;
 
 const isObject = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
 const isoTime = (v) => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null);
@@ -45,7 +48,7 @@ function backupSearch(input) {
   return { id: input.id, name, prefs, createdAt: isoTime(input.createdAt) };
 }
 
-function backupListing(id, input) {
+function cleanListing(id, input) {
   if (!isObject(input) || !isObject(input.data)) return null;
   const { data } = input;
   if (data.id !== id || !Object.hasOwn(SOURCES, data.source) || !httpUrl(data.url)) return null;
@@ -65,7 +68,7 @@ function backupListing(id, input) {
 
 function backupFavorite(input) {
   if (!isObject(input) || typeof input.listingId !== 'string' || !LISTING_ID.test(input.listingId)) return null;
-  const listing = input.listing == null ? null : backupListing(input.listingId, input.listing);
+  const listing = input.listing == null ? null : cleanListing(input.listingId, input.listing);
   if (input.listing != null && !listing) return null;
   const searches = (Array.isArray(input.searches) ? input.searches : [])
     .filter((m) => isObject(m) && Number.isInteger(m.searchId))
@@ -204,6 +207,19 @@ export const handlers = {
       searches: (await listSearches()).map(summary),
       favorites: await getFavorites(),
     };
+  },
+
+  shareListing: async ({ ids }) => {
+    const listings = (await Promise.all(listingIds(ids).slice(0, MAX_SHARED_LISTINGS).map(getListing))).filter(Boolean);
+    if (!listings.length) throw new ApiError('listing not found');
+    return { v: SHARE_FORMAT, listings: listings.map(({ firstSeen, lastSeen, prices, ...data }) => ({ data, firstSeen, lastSeen, prices })) };
+  },
+
+  sharedGroup: async (input) => {
+    const raw = isObject(input) && input.v === SHARE_FORMAT && Array.isArray(input.listings) ? input.listings : [];
+    const listings = raw.slice(0, MAX_SHARED_LISTINGS).map((l) => (isObject(l) && isObject(l.data) ? cleanListing(l.data.id, l) : null));
+    if (!listings.length || listings.some((l) => !l)) throw new ApiError('invalid share link');
+    return { group: sharedGroup(listings) };
   },
 
   setSetting: async ({ key, value }) => {

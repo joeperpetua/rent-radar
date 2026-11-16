@@ -56,10 +56,10 @@
         <div class="pane" data-for="installed">
           <p class="status ok">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>
-            <span data-i18n="installed">RentRadar ist installiert.</span>
+            <span data-i18n="installed" id="installed-text">RentRadar ist installiert.</span>
           </p>
           <button class="btn primary" type="button" id="open">
-            <span data-i18n="open">RentRadar öffnen</span>
+            <span data-i18n="open" id="open-label">RentRadar öffnen</span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
           </button>
         </div>
@@ -73,6 +73,7 @@
         </div>
 
         <div class="pane" data-for="missing">
+          <p class="share-cta" id="share-cta" data-i18n="sharedInstall" hidden>Installiere RentRadar, um dieses Inserat zu sehen.</p>
           <p class="status warn" id="browser-warn" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             <span data-i18n="unsupported">Dieser Browser kann RentRadar nicht ausführen. Wähle unten einen unterstützten.</span>
@@ -112,6 +113,36 @@
       </article>
     </section>
   </main>
+
+  <dialog class="shared" id="shared" aria-labelledby="shared-title" tabindex="-1">
+    <button class="shared-close" type="button" id="shared-close" data-i18n-aria="close" aria-label="Schließen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <div class="shared-media" id="shared-media" hidden>
+      <img class="shared-photo" id="shared-photo" alt="" referrerpolicy="no-referrer">
+    </div>
+    <div class="shared-body">
+      <span class="shared-kicker" data-i18n="sharedKicker">Mit dir geteilt</span>
+      <h2 class="shared-title" id="shared-title"></h2>
+      <p class="shared-facts" id="shared-facts"></p>
+      <p class="shared-place" id="shared-place"></p>
+    </div>
+    <div class="shared-action">
+      <p class="shared-cta" data-for="missing" data-i18n="sharedInstall">Installiere RentRadar, um dieses Inserat zu sehen.</p>
+      <p class="shared-cta" data-for="installed" data-i18n="sharedOpening">RentRadar ist installiert. Das Inserat wird geöffnet.</p>
+      <p class="shared-cta" data-for="stale" data-i18n="stale">Die Erweiterung wurde aktualisiert oder entfernt.</p>
+      <a class="btn primary" data-for="missing" id="shared-store" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/></svg>
+        <span id="shared-store-label"></span>
+      </a>
+      <button class="btn secondary" data-for="missing" type="button" id="shared-steps" data-i18n="sharedSteps">Installationsschritte zeigen</button>
+      <button class="btn primary" data-for="installed" type="button" id="shared-open">
+        <span data-i18n="openListing">Inserat öffnen</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+      </button>
+      <button class="btn primary" data-for="stale" type="button" id="shared-reload" data-i18n="reload">Seite neu laden</button>
+    </div>
+  </dialog>
 
   <footer>
     <p data-i18n="footer">Kontakt zu Anbietern läuft immer über das verlinkte Originalinserat.</p>

@@ -4,6 +4,7 @@ import { renderList } from './list.js';
 import { renderDetail } from './detail.js';
 import { loadFavorites, renderFavorites } from './favoritesView.js';
 import { closeLightbox } from './lightbox.js';
+import { openShared, sharedPayload } from './share.js';
 
 const HERO = 'listing-hero';
 
@@ -90,6 +91,11 @@ function setHero(el) {
 }
 
 function navigate() {
+  const payload = sharedPayload();
+  if (payload) {
+    openShared(payload);
+    return;
+  }
   const id = detailId();
   const opening = Boolean(id) && state.route !== 'detail';
   const closing = !id && state.route === 'detail';

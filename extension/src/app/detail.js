@@ -10,6 +10,7 @@ import { setupRating } from './ratingPanel.js';
 import { setupTranslation } from './translationPanel.js';
 import { sectionsHtml } from './sections.js';
 import { loadFavorites } from './favoritesView.js';
+import { isSharedOnly, shareListing } from './share.js';
 
 function findGroup(id) {
   const own = state.data?.groups.find((x) => x.id === id);
@@ -18,7 +19,7 @@ function findGroup(id) {
     const g = groups.find((x) => x.id === id);
     if (g) return g;
   }
-  return null;
+  return state.shared?.group.id === id ? state.shared.group : null;
 }
 
 function priceHistoryHtml(g) {
@@ -78,6 +79,7 @@ export function renderDetail(id) {
     if (!state.favData) loadFavorites();
     return;
   }
+  const shared = isSharedOnly(g);
   const priceDiffers = g.priceMin != null && g.priceMax - g.priceMin >= 1;
   const features = [...new Set(g.extras.map(feature).filter(Boolean))];
 
@@ -94,8 +96,12 @@ export function renderDetail(id) {
         <div>
           <div class="detail-head">
             <h1>${esc(g.title)}</h1>
-            <button class="btn fav-detail" type="button" data-action="fav-detail"></button>
+            <div class="detail-actions">
+              <button class="btn share-detail" type="button" data-action="share-detail" title="${esc(t('share'))}" aria-label="${esc(t('share'))}">${icon('share-2')}<span class="share-label">${esc(t('share'))}</span></button>
+              ${shared ? '' : '<button class="btn fav-detail" type="button" data-action="fav-detail"></button>'}
+            </div>
           </div>
+          ${shared ? `<p class="shared-note">${icon('share-2')}<span>${esc(t('sharedNote'))}</span></p>` : ''}
           ${g.reserved ? `<p class="reserved-note">${icon('lock')}<strong>${esc(t('badgeReserved'))}</strong><span>${esc(t('reservedHint'))}</span></p>` : ''}
           <div class="address">${esc(g.address ?? '')}</div>
           <dl class="keyfacts" id="keyfacts">${factsHtml(g)}</dl>
@@ -150,6 +156,11 @@ export function renderDetail(id) {
       </div>
     </div>`;
 
+  $('[data-action="share-detail"]', el).addEventListener('click', () => shareListing(g));
+  bindGallery(el, g);
+  setupTranslation(g);
+  setupRating(g);
+  if (shared) return;
   const favBtn = $('[data-action="fav-detail"]', el);
   const syncFav = () => {
     const fav = isFav(g);
@@ -159,9 +170,6 @@ export function renderDetail(id) {
   };
   syncFav();
   favBtn.addEventListener('click', () => toggleFav(g, syncFav));
-  bindGallery(el, g);
-  setupTranslation(g);
-  setupRating(g);
   ensureDetails(g);
 }
 

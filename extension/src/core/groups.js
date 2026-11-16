@@ -43,15 +43,26 @@ export async function computeGroups(searchId, prefs) {
   return groupsFromClusters(listings, clusters(listings)).map((g) => {
     const members = g.sources.map((s) => byId.get(s.id));
     return {
-      group: {
-        ...g,
-        sources: g.sources.map((s) => ({ ...s, priceHistory: histories.get(s.id) ?? null })),
-        categories: groupCategories(members),
-        priceChange: priceChange(g, histories),
-      },
+      group: decorateGroup(g, members, histories),
       history: [...members, ...members.flatMap((m) => related.get(m?.id) ?? [])].map(dates),
     };
   });
+}
+
+function decorateGroup(g, members, histories) {
+  return {
+    ...g,
+    sources: g.sources.map((s) => ({ ...s, priceHistory: histories.get(s.id) ?? null })),
+    categories: groupCategories(members),
+    priceChange: priceChange(g, histories),
+  };
+}
+
+export function sharedGroup(listings) {
+  const members = listings.map(({ data, firstSeen }) => ({ ...data, firstSeen }));
+  const histories = new Map(listings.filter((l) => l.prices.length > 1).map((l) => [l.data.id, l.prices]));
+  const [group] = groupsFromClusters(members, [members.map((_, i) => i)]);
+  return decorateGroup(group, members, histories);
 }
 
 export async function cachedGroups(searchId, prefs, version, persist) {

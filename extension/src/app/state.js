@@ -38,6 +38,7 @@ export const state = {
   filtersPushed: false,
   detailShown: null,
   lightbox: null,
+  shared: null,
 };
 
 export const api = (method, payload) => call(method, payload);

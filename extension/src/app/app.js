@@ -15,6 +15,7 @@ import { bindRefresh, onScanStatus, renderStatus } from './status.js';
 import { renderToasts } from './toasts.js';
 import { applyStyle, applyTheme, bindSettings, placeSettingsMenu, renderBackup, renderStorage } from './settings.js';
 import { bindPullToRefresh } from './pullToRefresh.js';
+import { openShared, sharedPayload } from './share.js';
 
 const CLOCK_TICK_MS = 60 * 1000;
 
@@ -112,6 +113,7 @@ async function init() {
   document.body.classList.remove('booting');
   state.route = null;
   renderAll();
+  if (sharedPayload()) openShared(sharedPayload());
   await loadListings();
   route();
 }

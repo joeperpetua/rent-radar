@@ -1072,10 +1072,14 @@ body.lightbox-open { overflow: hidden; }
 
 .detail h1 { margin: 0 0 6px; font-size: 24px; line-height: 1.25; letter-spacing: -.015em; }
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.detail-actions { flex: none; display: flex; gap: 8px; }
+.share-detail { gap: 6px; }
 .fav-detail { flex: none; gap: 6px; }
 .fav-detail .star { font-size: 16px; }
 .fav-detail[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 .detail .address { white-space: normal; font-size: 14px; margin-bottom: 18px; }
+.shared-note { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
+.shared-note .icon { flex: none; color: var(--accent); }
 
 .keyfacts {
   display: grid;
@@ -1228,8 +1232,8 @@ body.lightbox-open { overflow: hidden; }
   .gallery-main { height: auto; aspect-ratio: 4 / 3; }
   .detail-mode .brand-name { display: none; }
   .detail-mode .topbar-back { margin-right: auto; }
-  .fav-detail { width: 38px; padding: 0; }
-  .fav-detail .fav-label { display: none; }
+  .fav-detail, .share-detail { width: 38px; padding: 0; }
+  .fav-detail .fav-label, .share-detail .share-label { display: none; }
 }
 
 @media (max-width: 600px) {

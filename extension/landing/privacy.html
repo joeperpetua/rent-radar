@@ -34,7 +34,7 @@
   <main>
     <article class="policy" lang="de">
       <h1>Datenschutzerklärung</h1>
-      <p class="updated">Stand: 12. November 2026</p>
+      <p class="updated">Stand: 16. November 2026</p>
 
       <h2>Kurz gesagt</h2>
       <ul>
@@ -57,7 +57,7 @@
         <li>zwischengespeicherte Ergebnisse der Lagebewertung (30 Tage)</li>
       </ul>
       <p>Kontaktdaten von Vermietern oder Maklern (Telefon, E-Mail) werden nicht ausgelesen oder gespeichert. Kontakt läuft immer über das verlinkte Originalinserat.</p>
-      <p>Diese Daten verlassen deinen Browser nicht in Richtung des Entwicklers. Es gibt keine Synchronisierung und keine Sicherung auf einem Server.</p>
+      <p>Diese Daten verlassen deinen Browser nicht in Richtung des Entwicklers. Es gibt keine Synchronisierung und keine Sicherung auf einem Server. Exportierst du in den Einstellungen eine Sicherung, wird sie als Datei auf deinem Gerät gespeichert.</p>
 
       <h2>Verbindungen zu anderen Diensten</h2>
       <h3>Immobilien-Websites</h3>
@@ -70,6 +70,10 @@
       <h3>KI-Lagebewertung (nur auf Klick)</h3>
       <p>Startest du die Lagebewertung, werden die Koordinaten des Inserats an einen öffentlichen Overpass-Server gesendet, um Haltestellen, Geschäfte und Grünflächen in der Nähe abzufragen. Verwendet wird overpass-api.de, ist dieser nicht erreichbar, overpass.private.coffee. Gesendet werden nur die Koordinaten, keine Angaben über dich, aber der Server sieht deine IP-Adresse. Die Bewertung selbst erstellt das in Chrome eingebaute KI-Modell direkt auf deinem Gerät.</p>
 
+      <h3>Geteilte Inserate</h3>
+      <p>Mit „Teilen“ erzeugt die Erweiterung einen Link auf diese Website. Die Angaben zum Inserat (Titel, Preis, Fläche, Adresse, Beschreibung, Fotolinks, Preisverlauf) stehen komprimiert im Link, im Teil nach dem „#“. Diesen Teil senden Browser nicht an den Server, der Webhoster sieht ihn also nicht. Der Link wird nirgends hochgeladen, du entscheidest, wem du ihn schickst.</p>
+      <p>Öffnet jemand den Link ohne installierte Erweiterung, zeigt diese Website eine Vorschau des Inserats und lädt dafür das erste Foto direkt vom Server der Immobilien-Website. Diese sieht dabei die IP-Adresse und die Kennung des Browsers. Ist die Erweiterung installiert, öffnet sie das Inserat direkt.</p>
+
       <h3>Übersetzung</h3>
       <p>Die Übersetzung von Inseratstexten nutzt die in Chrome eingebaute Übersetzungsfunktion und läuft auf deinem Gerät. Sprachpakete und das KI-Modell lädt Chrome selbst von Google herunter. Dafür gelten die Bedingungen von Google Chrome.</p>
 
@@ -77,7 +81,7 @@
       <ul>
         <li><b>Zugriff auf bestimmte Websites:</b> nur auf die Domains der unterstützten Immobilienquellen und der beiden Overpass-Server. Dein Browser zeigt die vollständige Liste bei der Installation. Die Berechtigung wird nur für Anfragen an diese Seiten verwendet. Die Erweiterung läuft nicht auf Seiten, die du besuchst, und liest oder verändert sie nicht.</li>
         <li><b>Unbegrenzter Speicher:</b> verhindert, dass der Browser deine Suchen und Inserate bei Platzmangel löscht.</li>
-        <li><b>Inhaltsskript auf dieser Website:</b> meldet nur, dass die Erweiterung installiert ist, damit diese Seite sie öffnen kann.</li>
+        <li><b>Inhaltsskript auf dieser Website:</b> meldet nur, dass die Erweiterung installiert ist, damit diese Seite sie öffnen kann, und reicht einen geteilten Inseratslink an die Erweiterung weiter.</li>
       </ul>
 
       <h2>Speicherdauer und Löschen</h2>
@@ -88,7 +92,7 @@
       </ul>
 
       <h2>Diese Website</h2>
-      <p>Diese Website setzt keine Cookies und verwendet keine Analyse-Tools. Sprache und Hell-/Dunkelmodus werden im localStorage deines Browsers gespeichert. Schriftarten und alle anderen Dateien kommen von diesem Server, es werden keine Inhalte von Dritten geladen. Der Webhoster kann technische Zugriffsdaten (IP-Adresse, Zeitpunkt, aufgerufene Seite) für Betrieb und Sicherheit protokollieren.</p>
+      <p>Diese Website setzt keine Cookies und verwendet keine Analyse-Tools. Sprache und Hell-/Dunkelmodus werden im localStorage deines Browsers gespeichert. Schriftarten und alle anderen Dateien kommen von diesem Server. Inhalte von Dritten werden nur bei einem geteilten Inserat geladen: das Vorschaufoto (siehe oben). Der Webhoster kann technische Zugriffsdaten (IP-Adresse, Zeitpunkt, aufgerufene Seite) für Betrieb und Sicherheit protokollieren.</p>
 
       <h2>Deine Rechte</h2>
       <p>Da der Entwickler keine Daten über dich erhält, gibt es bei uns nichts zum Auskunft geben, Berichtigen oder Löschen: Du hast alle Daten selbst in der Hand. Gegenüber den oben genannten Diensten hast du die Rechte nach der DSGVO (Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch, Datenübertragbarkeit). Du kannst dich bei der österreichischen Datenschutzbehörde (dsb.gv.at) beschweren.</p>
@@ -102,7 +106,7 @@
 
     <article class="policy" lang="en">
       <h1>Privacy policy</h1>
-      <p class="updated">Last updated: 12 November 2026</p>
+      <p class="updated">Last updated: 16 November 2026</p>
 
       <h2>In short</h2>
       <ul>
@@ -125,7 +129,7 @@
         <li>cached location ratings (30 days)</li>
       </ul>
       <p>Contact details of landlords or agents (phone, email) are not read or stored. Contact always goes through the linked original listing.</p>
-      <p>None of this data is sent to the developer. There is no sync and no server backup.</p>
+      <p>None of this data is sent to the developer. There is no sync and no server backup. If you export a backup in the settings, it is saved as a file on your device.</p>
 
       <h2>Connections to other services</h2>
       <h3>Property websites</h3>
@@ -138,6 +142,10 @@
       <h3>AI location rating (on click only)</h3>
       <p>When you start a location rating, the listing's coordinates are sent to a public Overpass server to look up nearby stops, shops and green space. It uses overpass-api.de, and overpass.private.coffee if that is unreachable. Only the coordinates are sent, nothing about you, but the server sees your IP address. The rating itself is made by Chrome's built-in AI model on your device.</p>
 
+      <h3>Shared listings</h3>
+      <p>"Share" makes the extension create a link to this website. The listing's details (title, price, size, address, description, photo links, price history) are compressed into the link, in the part after the "#". Browsers do not send that part to the server, so the web host never sees it. The link is not uploaded anywhere; you decide who you send it to.</p>
+      <p>If someone opens the link without the extension installed, this website shows a preview of the listing and loads its first photo directly from the property website's server. That server sees their IP address and browser identifier. If the extension is installed, it opens the listing directly.</p>
+
       <h3>Translation</h3>
       <p>Translating listing texts uses Chrome's built-in translator and runs on your device. Chrome downloads language packs and the AI model from Google itself. Google Chrome's terms apply to that.</p>
 
@@ -145,7 +153,7 @@
       <ul>
         <li><b>Access to specific websites:</b> only the domains of the supported property sources and the two Overpass servers. Your browser shows the full list on install. The permission is used only for requests to those sites. The extension does not run on, read or change pages you visit.</li>
         <li><b>Unlimited storage:</b> keeps the browser from deleting your searches and listings when disk space runs low.</li>
-        <li><b>Content script on this website:</b> only signals that the extension is installed, so this page can open it.</li>
+        <li><b>Content script on this website:</b> only signals that the extension is installed, so this page can open it, and passes a shared listing link on to the extension.</li>
       </ul>
 
       <h2>Retention and deletion</h2>
@@ -156,7 +164,7 @@
       </ul>
 
       <h2>This website</h2>
-      <p>This website sets no cookies and uses no analytics. Language and light/dark mode are kept in your browser's localStorage. Fonts and all other files come from this server; nothing is loaded from third parties. The web host may log technical access data (IP address, time, page requested) for operation and security.</p>
+      <p>This website sets no cookies and uses no analytics. Language and light/dark mode are kept in your browser's localStorage. Fonts and all other files come from this server. Third-party content is loaded only for a shared listing: the preview photo (see above). The web host may log technical access data (IP address, time, page requested) for operation and security.</p>
 
       <h2>Your rights</h2>
       <p>The developer receives no data about you, so there is nothing for us to disclose, correct or delete: you hold all of it yourself. Towards the services named above you have your rights under the GDPR (access, rectification, erasure, restriction, objection, portability). You can lodge a complaint with the Austrian Data Protection Authority (dsb.gv.at).</p>
